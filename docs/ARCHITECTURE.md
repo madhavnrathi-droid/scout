@@ -159,8 +159,18 @@ Serves `public/`, routes `/api/*` to the handlers with a Vercel-shaped `(req, re
 
 **Node caches transitive imports.** After editing `api/_lib/*` or any data file, restart the server — the handler will otherwise keep serving the old module.
 
-Syntax check everything before committing:
+Check everything before committing:
 
 ```bash
 npm run check
 ```
+
+This does two things, and the second one matters more than it looks. `node --check`
+only **parses** — it never resolves imports, so a deleted or renamed module passes
+it cleanly and then fails at runtime in production. `scripts/check-api.mjs`
+cold-imports every module in a fresh process, which is the only way to catch it.
+
+That is not hypothetical: `api/_data/opportunities.js` was deleted by accident
+during an unrelated cleanup and the feed broke in production for three deploys.
+Local dev never noticed, because the long-running dev process still had the module
+resident in memory and every reload was served from that warm cache.

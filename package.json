@@ -3,11 +3,13 @@
   "version": "37.0.0",
   "type": "module",
   "private": true,
-  "description": "Scout — every opportunity worth your time. Live opportunity discovery, admissions, and an application copilot for Indian students.",
+  "description": "Scout \u2014 every opportunity worth your time. Live opportunity discovery, admissions, and an application copilot for Indian students.",
   "homepage": "https://opportune-six.vercel.app",
   "scripts": {
     "dev": "node scripts/dev.mjs 3001",
-    "check": "node --check public/scout.js && for f in api/*.js api/_lib/*.js; do node --check \"$f\" || exit 1; done && echo 'all files parse'"
+    "check": "node --check public/scout.js && node scripts/check-api.mjs"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }
