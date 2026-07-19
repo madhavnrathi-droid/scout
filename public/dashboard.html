@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>timshel · admin dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poiret+One&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAFAF6;--surface:#FFFFFF;--ink:#0E0E0E;--ink2:#6B6B6B;--ink3:#A8A8A4;
+  --line:#EFECE5;--line2:#F4F1EA;
+  --pos:#16A34A;--neg:#E25555;--warn:#F59E0B;
+  --pink:#FFDCE3;--mint:#D6F2DD;--sky:#D6E6FF;--cream:#FFEFC9;--lav:#E1D8FF;
+  --r:14px;--r-md:20px;
+  --font:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --display:'Poiret One',serif;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-font-smoothing:antialiased}
+body{font-family:var(--font);background:var(--bg);color:var(--ink);font-size:13.5px;line-height:1.5}
+button{font-family:inherit;border:none;background:none;color:inherit;cursor:pointer;font-size:inherit}
+input{font-family:inherit}
+a{color:inherit}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px}
+::-webkit-scrollbar-track{background:transparent}
+
+.layout{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+.side{background:var(--surface);border-right:1px solid var(--line2);padding:24px 16px;position:sticky;top:0;height:100vh;overflow-y:auto}
+.brand{font-family:var(--display);font-size:28px;color:var(--ink);letter-spacing:.02em;margin-bottom:4px;padding:0 8px}
+.brand-sub{font-size:11px;color:var(--ink2);font-weight:500;letter-spacing:.06em;text-transform:uppercase;margin-bottom:30px;padding:0 8px}
+.nav-h{font-size:10.5px;font-weight:600;color:var(--ink3);letter-spacing:.06em;text-transform:uppercase;padding:14px 8px 8px}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:10px;color:var(--ink2);font-weight:500;transition:.12s;cursor:pointer;text-decoration:none;font-size:13.5px}
+.nav a:hover{background:var(--bg);color:var(--ink)}
+.nav a.on{background:var(--ink);color:#fff}
+.nav a svg{width:15px;height:15px;flex-shrink:0}
+
+.main{padding:30px 36px 60px;max-width:1400px}
+.head{display:flex;align-items:flex-start;justify-content:space-between;gap:20px;margin-bottom:30px}
+.head h1{font-size:28px;font-weight:700;letter-spacing:-.025em;margin-bottom:4px}
+.head .sub{font-size:13px;color:var(--ink2)}
+.head .actions{display:flex;gap:8px;align-items:center}
+.btn{padding:9px 14px;border-radius:999px;font-size:12.5px;font-weight:600;border:1px solid var(--line);background:var(--surface);transition:.12s;cursor:pointer}
+.btn:hover{background:var(--bg)}
+.btn.dark{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.dark:hover{background:#000}
+.btn svg{width:13px;height:13px;display:inline-block;vertical-align:middle;margin-right:5px}
+
+/* KPI cards */
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:32px}
+@media(max-width:1100px){.kpis{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:var(--surface);padding:20px 22px;border-radius:var(--r-md);border:1px solid var(--line2);position:relative;overflow:hidden}
+.kpi .l{font-size:11px;font-weight:600;color:var(--ink2);letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px}
+.kpi .v{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1;margin-bottom:6px}
+.kpi .d{font-size:11.5px;color:var(--ink2);display:flex;align-items:center;gap:5px}
+.kpi .d .up{color:var(--pos);font-weight:600}
+.kpi .d .down{color:var(--neg);font-weight:600}
+.kpi.bg-pink{background:var(--pink)}
+.kpi.bg-mint{background:var(--mint)}
+.kpi.bg-sky{background:var(--sky)}
+.kpi.bg-cream{background:var(--cream)}
+.kpi.bg-lav{background:var(--lav)}
+
+/* Card / panel */
+.panel{background:var(--surface);border-radius:var(--r-md);border:1px solid var(--line2);margin-bottom:20px;overflow:hidden}
+.panel-h{padding:18px 22px;border-bottom:1px solid var(--line2);display:flex;align-items:center;justify-content:space-between;gap:10px}
+.panel-h h2{font-size:15px;font-weight:700;letter-spacing:-.015em;display:flex;align-items:center;gap:8px}
+.panel-h .meta{font-size:11.5px;color:var(--ink2);font-weight:500}
+.panel-body{padding:0}
+
+/* 2-column grid for panels */
+.row{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;margin-bottom:20px}
+@media(max-width:1100px){.row{grid-template-columns:1fr}}
+
+/* Table */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;padding:14px 22px;font-weight:600;color:var(--ink2);font-size:11px;letter-spacing:.04em;text-transform:uppercase;border-bottom:1px solid var(--line2);background:var(--bg)}
+td{padding:13px 22px;border-bottom:1px solid var(--line2);font-weight:500}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg)}
+.cell-mono{font-family:var(--mono);font-size:12px;color:var(--ink2)}
+.cell-strong{font-weight:600;color:var(--ink)}
+.cell-tight{max-width:280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Pills */
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600}
+.pill.pos{background:#DCFCE7;color:#15803D}
+.pill.neg{background:#FEE2E2;color:#B91C1C}
+.pill.warn{background:#FEF3C7;color:#92400E}
+.pill.neu{background:var(--bg);color:var(--ink2)}
+.pill.urg{background:var(--pink);color:var(--ink)}
+.pill .dot{width:6px;height:6px;border-radius:50%}
+.pill.pos .dot{background:var(--pos)}
+.pill.neg .dot{background:var(--neg)}
+.pill.warn .dot{background:var(--warn)}
+
+/* Source row with bar */
+.src-row{padding:14px 22px;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:14px}
+.src-row:last-child{border-bottom:none}
+.src-row .nm{flex:1;min-width:0}
+.src-row .nm .t{font-size:13.5px;font-weight:600;margin-bottom:3px}
+.src-row .nm .m{font-size:11px;color:var(--ink2)}
+.src-row .ct{font-size:18px;font-weight:700;letter-spacing:-.02em;margin-right:10px;font-variant-numeric:tabular-nums}
+.bar{width:80px;height:6px;background:var(--bg);border-radius:3px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ink);border-radius:3px;transition:width .4s ease}
+
+/* Type bubble grid */
+.types{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:18px 22px}
+.types .t{padding:14px 12px;background:var(--bg);border-radius:14px;text-align:center}
+.types .t .n{font-size:20px;font-weight:700;letter-spacing:-.02em}
+.types .t .l{font-size:10.5px;color:var(--ink2);font-weight:500;margin-top:2px}
+
+/* Sources status */
+.status-dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:6px}
+.status-dot.ok{background:var(--pos)}
+.status-dot.err{background:var(--neg)}
+.status-dot.pending{background:var(--warn)}
+
+/* Empty / loading */
+.muted{padding:30px;text-align:center;color:var(--ink2);font-size:13px}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--ink);border-radius:50%;animation:s 0.8s linear infinite;vertical-align:middle}
+@keyframes s{to{transform:rotate(360deg)}}
+
+/* Auth gate */
+.gate{position:fixed;inset:0;background:rgba(250,250,246,.96);backdrop-filter:blur(10px);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.gate-card{background:var(--surface);padding:32px;border-radius:var(--r-md);max-width:380px;width:100%;border:1px solid var(--line2);box-shadow:0 20px 60px rgba(0,0,0,.08)}
+.gate-card .brand{padding:0;margin-bottom:14px;font-size:32px}
+.gate-card h2{font-size:18px;font-weight:700;margin-bottom:8px}
+.gate-card p{font-size:13px;color:var(--ink2);margin-bottom:20px}
+.gate-card input{width:100%;padding:13px 16px;border-radius:12px;border:1.5px solid var(--line);font-size:14px;outline:none;margin-bottom:12px}
+.gate-card input:focus{border-color:var(--ink)}
+.gate-card button{width:100%;padding:14px;border-radius:999px;background:var(--ink);color:#fff;font-weight:600;font-size:14px;cursor:pointer}
+.gate-card .err{font-size:12px;color:var(--neg);margin-top:8px;min-height:14px}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="brand">timshel</div>
+    <h2>Admin sign-in</h2>
+    <p>Enter the admin key set in your Vercel environment variables (<code style="font-size:11.5px;background:var(--bg);padding:2px 6px;border-radius:4px">ADMIN_SECRET</code>).</p>
+    <input type="password" id="gate-key" placeholder="Admin key" autofocus>
+    <button onclick="login()">Sign in</button>
+    <div class="err" id="gate-err"></div>
+  </div>
+</div>
+
+<div class="layout" id="layout" style="visibility:hidden">
+  <aside class="side">
+    <div class="brand">timshel</div>
+    <div class="brand-sub">admin · v1</div>
+    <div class="nav-h">Overview</div>
+    <div class="nav">
+      <a class="on">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Dashboard
+      </a>
+    </div>
+    <div class="nav-h">External</div>
+    <div class="nav">
+      <a href="/" target="_blank">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 3H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-4M14 3h7v7M21 3l-9 9" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Live app
+      </a>
+      <a href="https://github.com/madhavnrathi-droid/Opportune" target="_blank">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 00-3.79 23.39c.6.11.82-.26.82-.58v-2.03c-3.34.73-4.04-1.61-4.04-1.61-.55-1.39-1.34-1.76-1.34-1.76-1.09-.74.08-.73.08-.73 1.21.08 1.84 1.24 1.84 1.24 1.07 1.84 2.81 1.31 3.5 1 .11-.78.42-1.31.76-1.61-2.66-.3-5.47-1.33-5.47-5.93 0-1.31.47-2.38 1.24-3.22-.13-.3-.54-1.52.11-3.18 0 0 1.01-.32 3.3 1.23.96-.27 1.99-.4 3.02-.4 1.02 0 2.05.14 3.02.4 2.29-1.55 3.3-1.23 3.3-1.23.65 1.66.24 2.88.12 3.18.77.84 1.23 1.91 1.23 3.22 0 4.61-2.81 5.63-5.49 5.92.43.37.81 1.1.81 2.21v3.28c0 .32.21.69.82.58A12 12 0 0012 .3"/></svg>
+        Repo
+      </a>
+      <a href="https://vercel.com" target="_blank">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L2 19h20L12 2z"/></svg>
+        Vercel
+      </a>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="head">
+      <div>
+        <h1>Dashboard</h1>
+        <div class="sub" id="head-sub">Loading…</div>
+      </div>
+      <div class="actions">
+        <button class="btn" onclick="refresh()" id="refresh-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 019-9 9 9 0 016.93 3.07L21 7M21 3v4h-4M21 12a9 9 0 01-9 9 9 9 0 01-6.93-3.07L3 17M3 21v-4h4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Refresh
+        </button>
+        <button class="btn dark" onclick="signOut()">
+          Sign out
+        </button>
+      </div>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="row">
+      <div class="panel">
+        <div class="panel-h">
+          <h2>Sources</h2>
+          <span class="meta" id="src-meta"></span>
+        </div>
+        <div class="panel-body" id="src-list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-h">
+          <h2>Opportunity types</h2>
+          <span class="meta">live distribution</span>
+        </div>
+        <div class="types" id="types"></div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-h">
+        <h2>Recent crawl runs</h2>
+        <span class="meta">last 30 · ordered newest first</span>
+      </div>
+      <div class="panel-body">
+        <div style="overflow-x:auto">
+          <table id="runs-tbl">
+            <thead><tr><th>When</th><th>Source</th><th>Status</th><th>Found</th><th>Upserted</th><th>Duration</th><th>Error</th></tr></thead>
+            <tbody id="runs-tbody"><tr><td colspan="7" class="muted">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <div class="panel">
+        <div class="panel-h">
+          <h2>Closing this week</h2>
+          <span class="meta">action needed</span>
+        </div>
+        <div class="panel-body" id="closing-list"></div>
+      </div>
+      <div class="panel">
+        <div class="panel-h">
+          <h2>Recent sign-ups</h2>
+          <span class="meta">latest users</span>
+        </div>
+        <div class="panel-body" id="signups-list"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+const API = (location.hostname === 'localhost') ? 'http://localhost:3001/api/admin' : '/api/admin';
+let KEY = '';
+
+function login(){
+  KEY = document.getElementById('gate-key').value.trim();
+  if (!KEY) return;
+  document.getElementById('gate-err').textContent = '';
+  loadAll();
+}
+function signOut(){ KEY=''; sessionStorage.removeItem('admk'); location.reload(); }
+
+document.getElementById('gate-key').addEventListener('keydown', e => { if(e.key==='Enter') login(); });
+
+window.addEventListener('load', () => {
+  const k = sessionStorage.getItem('admk');
+  if (k) { KEY = k; loadAll(); }
+});
+
+async function loadAll(){
+  try {
+    const r = await fetch(`${API}/stats?key=${encodeURIComponent(KEY)}`);
+    if (r.status === 403) {
+      document.getElementById('gate-err').textContent = 'Wrong key — try again.';
+      return;
+    }
+    if (!r.ok) {
+      // Probably API not deployed yet — show demo data so dashboard is browsable
+      document.getElementById('gate-err').textContent = '';
+      sessionStorage.setItem('admk', KEY);
+      document.getElementById('gate').style.display='none';
+      document.getElementById('layout').style.visibility='visible';
+      renderDemo();
+      return;
+    }
+    const data = await r.json();
+    sessionStorage.setItem('admk', KEY);
+    document.getElementById('gate').style.display='none';
+    document.getElementById('layout').style.visibility='visible';
+    render(data);
+  } catch (e) {
+    // Network error — show demo
+    document.getElementById('gate-err').textContent = '';
+    sessionStorage.setItem('admk', KEY);
+    document.getElementById('gate').style.display='none';
+    document.getElementById('layout').style.visibility='visible';
+    renderDemo();
+  }
+}
+
+function refresh(){
+  const b = document.getElementById('refresh-btn');
+  b.innerHTML = '<span class="spin"></span> Refresh';
+  loadAll().finally(() => {
+    setTimeout(() => {
+      b.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 019-9 9 9 0 016.93 3.07L21 7M21 3v4h-4M21 12a9 9 0 01-9 9 9 9 0 01-6.93-3.07L3 17M3 21v-4h4" stroke-linecap="round" stroke-linejoin="round"/></svg> Refresh';
+    }, 400);
+  });
+}
+
+function render(data){
+  const T = data.totals || {};
+  document.getElementById('head-sub').textContent = `Live · last refreshed ${new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi bg-mint"><div class="l">Opportunities</div><div class="v">${T.opportunities_active||0}</div><div class="d">of ${T.opportunities_total||0} total</div></div>
+    <div class="kpi bg-sky"><div class="l">Sources active</div><div class="v">${T.sources_enabled||0}</div><div class="d">of ${T.sources_total||0} configured</div></div>
+    <div class="kpi bg-cream"><div class="l">Users</div><div class="v">${T.users||0}</div><div class="d"><span class="up">+${T.users_7d||0}</span> in 7 days</div></div>
+    <div class="kpi bg-pink"><div class="l">Leads</div><div class="v">${T.leads_total||0}</div><div class="d"><span class="up">+${T.leads_7d||0}</span> in 7 days</div></div>`;
+
+  const max = Math.max(1, ...(data.topSources||[]).map(s=>s.opp_count||0));
+  document.getElementById('src-meta').textContent = `${(data.topSources||[]).length} configured`;
+  document.getElementById('src-list').innerHTML = (data.topSources||[]).map(s => {
+    const last = s.last_success ? new Date(s.last_success).toLocaleString() : 'never';
+    const ok = s.status === 'ok' ? 'ok' : (s.status === 'error' ? 'err' : 'pending');
+    return `<div class="src-row">
+      <div class="nm">
+        <div class="t"><span class="status-dot ${ok}"></span>${s.name}</div>
+        <div class="m">${s.slug} · last success ${last}</div>
+      </div>
+      <div class="ct">${s.opp_count||0}</div>
+      <div class="bar"><i style="width:${(s.opp_count||0)/max*100}%"></i></div>
+    </div>`;
+  }).join('') || '<div class="muted">No sources configured yet.</div>';
+
+  const types = data.topTypes || [];
+  document.getElementById('types').innerHTML = types.length ? types.map(t =>
+    `<div class="t"><div class="n">${t.n}</div><div class="l">${t.type || '—'}</div></div>`
+  ).join('') : '<div class="muted" style="grid-column:1/-1">No opportunities yet.</div>';
+
+  document.getElementById('runs-tbody').innerHTML = (data.recentRuns||[]).length ? (data.recentRuns||[]).map(r => {
+    const when = new Date(r.started_at).toLocaleString();
+    const dur = r.duration_ms ? `${(r.duration_ms/1000).toFixed(1)}s` : '—';
+    const status = r.status === 'ok' ? `<span class="pill pos"><span class="dot"></span>ok</span>`
+                 : r.status === 'error' ? `<span class="pill neg"><span class="dot"></span>error</span>`
+                 : `<span class="pill warn"><span class="dot"></span>${r.status||'—'}</span>`;
+    return `<tr>
+      <td class="cell-mono">${when}</td>
+      <td class="cell-strong">${r.source_slug}</td>
+      <td>${status}</td>
+      <td>${r.found_count||0}</td>
+      <td>${r.upsert_count||0}</td>
+      <td class="cell-mono">${dur}</td>
+      <td class="cell-tight" style="color:var(--neg);font-size:12px">${r.error||''}</td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="7" class="muted">No crawl runs yet — trigger one via GitHub Actions or run <code>node crawler/run-to-pg.js</code> locally.</td></tr>';
+
+  document.getElementById('closing-list').innerHTML = (data.closingSoon||[]).length ? (data.closingSoon||[]).map(o =>
+    `<div class="src-row">
+      <div class="nm">
+        <div class="t cell-tight">${o.title}</div>
+        <div class="m">${o.org} · ${o.deadline_text}</div>
+      </div>
+      <span class="pill ${o.days_left<=3?'urg':'neu'}">${o.days_left<=0?'live':o.days_left+'d'}</span>
+    </div>`
+  ).join('') : '<div class="muted">Nothing closing in the next 14 days.</div>';
+
+  document.getElementById('signups-list').innerHTML = (data.recentSignups||[]).length ? (data.recentSignups||[]).map(u =>
+    `<div class="src-row">
+      <div class="nm">
+        <div class="t">${u.name || '(no name)'}</div>
+        <div class="m">${u.email} · ${u.role || 'unset'}${u.institution ? ' · ' + u.institution : ''}</div>
+      </div>
+      <span class="m" style="font-size:11px;color:var(--ink2)">${new Date(u.created_at).toLocaleDateString()}</span>
+    </div>`
+  ).join('') : '<div class="muted">No sign-ups yet.</div>';
+}
+
+function renderDemo(){
+  document.getElementById('head-sub').innerHTML = '<span style="color:var(--warn);font-weight:600">⚠ Demo mode</span> — DATABASE_URL not yet configured. Set it in Vercel env vars + run the seed.';
+  render({
+    totals: { opportunities_active: 16, opportunities_total: 16, sources_enabled: 18, sources_total: 18, users: 0, users_7d: 0, leads_total: 0, leads_7d: 0, saved_total: 0, applied_total: 0, engagement_proxy: 41832 },
+    recentRuns: [],
+    topTypes: [{type:'Fellowship',n:6},{type:'Hackathon',n:2},{type:'Grant',n:3},{type:'Internship',n:1},{type:'Competition',n:2}],
+    topSources: [
+      {slug:'devfolio',name:'Devfolio',opp_count:1,status:'pending',last_success:null},
+      {slug:'iitm',name:'IIT Madras',opp_count:1,status:'pending',last_success:null},
+      {slug:'serb',name:'Science & Engineering Research Board',opp_count:1,status:'pending',last_success:null},
+    ],
+    closingSoon: [],
+    recentSignups: []
+  });
+}
+</script>
+</body>
+</html>

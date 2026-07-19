@@ -1,0 +1,1835 @@
+// Research-verified admission cycles — generated from the 19 Jul 2026 web-research run
+// (6 parallel researchers + adversarial audit over 98 raw findings; every entry
+//  labelled VERIFIED-OPEN / UPCOMING / ESTIMATED in its status_note).
+export const CYCLES = [
+ {
+  "name": "CLAT 2027 (UG)",
+  "org": "Consortium of NLUs",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Law"
+  ],
+  "exam": "CLAT 2027",
+  "exam_date": "2026-12-06 (widely reported; official notification due by Aug 2026)",
+  "window_open": "2026-08-01 (expected; Consortium confirmed August 2026 start)",
+  "window_close": "expected 2026-10-31",
+  "fee": "₹4,000 Gen/OBC; ₹3,500 SC/ST/BPL (prev cycle)",
+  "eligibility": "10+2 pass/appearing with 45% (40% SC/ST); no upper age limit",
+  "mode": "offline",
+  "seats_or_intake": "~3,700 BA LLB seats across 24+ NLUs",
+  "url": "https://consortiumofnlus.ac.in",
+  "status_note": "UPCOMING — Consortium of NLUs confirmed registration opens Aug 2026 for exam on 6 Dec 2026; exact open/close dates await the official notification"
+ },
+ {
+  "name": "JEE Main 2027 Session 1",
+  "org": "NTA",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Engineering"
+  ],
+  "exam": "JEE Main",
+  "exam_date": "expected January 2027 (late Jan)",
+  "window_open": "expected October 2026 (last week)",
+  "window_close": "expected November 2026",
+  "fee": "₹1,000 Gen male; ₹800 all female; ₹500 SC/ST per paper (2026 rates)",
+  "eligibility": "Class 12 PCM passed 2025/2026 or appearing 2027; no age limit",
+  "mode": "online",
+  "seats_or_intake": "~60,000 seats in NITs/IIITs/GFTIs; ~15 lakh applicants",
+  "url": "https://jeemain.nta.nic.in",
+  "status_note": "ESTIMATED — NTA 2027 brochure not released; dates follow the consistent recent-year pattern (Oct-Nov registration, Jan exam)"
+ },
+ {
+  "name": "JEE Main 2027 Session 2",
+  "org": "NTA",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Engineering"
+  ],
+  "exam": "JEE Main",
+  "exam_date": "expected April 2027",
+  "window_open": "expected February 2027",
+  "window_close": "expected March 2027",
+  "fee": "₹1,000 Gen male; ₹800 all female; ₹500 SC/ST per paper (2026 rates)",
+  "eligibility": "Class 12 PCM passed 2025/2026 or appearing 2027; no age limit",
+  "mode": "online",
+  "url": "https://jeemain.nta.nic.in",
+  "status_note": "ESTIMATED — Session 2 window typically opens after Session 1 results; per NTA's annual pattern"
+ },
+ {
+  "name": "JEE Advanced 2027",
+  "org": "IIT Delhi (reported organizing institute)",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Engineering"
+  ],
+  "exam": "JEE Advanced",
+  "exam_date": "expected May 2027 (2nd week; exact date due Dec 2026)",
+  "window_open": "expected April 2027 (last week)",
+  "window_close": "expected May 2027",
+  "fee": "≈₹3,200 Gen male; ~₹1,600 female/SC/ST (prev cycle)",
+  "eligibility": "Top ~2.5 lakh JEE Main 2027 qualifiers; Class 12 in 2026 or 2027; max 2 attempts in consecutive years",
+  "mode": "online",
+  "seats_or_intake": "~17,700 seats across 23 IITs",
+  "url": "https://jeeadv.ac.in",
+  "status_note": "ESTIMATED — organizing IIT (Delhi) reported by multiple portals; exact exam date to be announced around Dec 2026"
+ },
+ {
+  "name": "NEET UG 2027",
+  "org": "NTA",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Medicine"
+  ],
+  "exam": "NEET UG",
+  "exam_date": "expected 2027-05-02 (first Sunday of May, per NTA pattern)",
+  "window_open": "expected February 2027",
+  "window_close": "expected March 2027",
+  "fee": "₹1,700 Gen; ₹1,600 OBC/EWS; ₹1,000 SC/ST/PwD (2026 rates)",
+  "eligibility": "10+2 PCB with 50% (40% reserved); minimum age 17",
+  "mode": "offline",
+  "seats_or_intake": "~1.2 lakh MBBS seats + BDS/AYUSH/nursing",
+  "url": "https://neet.nta.nic.in",
+  "status_note": "ESTIMATED — NTA has not announced NEET 2027 dates; Feb registration / early-May pen-paper exam is the settled pattern"
+ },
+ {
+  "name": "CUET UG 2027",
+  "org": "NTA",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "All"
+  ],
+  "exam": "CUET UG",
+  "exam_date": "expected May 2027",
+  "window_open": "expected February 2027",
+  "window_close": "expected March 2027",
+  "fee": "₹1,000 Gen for up to 3 subjects; +₹400 per extra subject (2026 rates)",
+  "eligibility": "Class 12 pass/appearing, any stream; no age limit",
+  "mode": "online",
+  "seats_or_intake": "Gateway to 250+ universities incl. DU, BHU, JNU, AMU, state & private",
+  "url": "https://cuet.nta.nic.in",
+  "status_note": "ESTIMATED — portals report tentative Jan-Mar 2027 registration; NTA notification awaited (Feb-Mar open is the recent pattern)"
+ },
+ {
+  "name": "BITSAT 2027",
+  "org": "BITS Pilani",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Engineering"
+  ],
+  "exam": "BITSAT (two sessions)",
+  "exam_date": "expected April & May 2027 (Session 1 & 2)",
+  "window_open": "expected December 2026 (2026 cycle opened 15 Dec 2025)",
+  "window_close": "expected March 2027",
+  "fee": "₹3,600 male / ₹3,100 female one session; ₹5,600 / ₹4,600 both (2026 rates)",
+  "eligibility": "10+2 with PCM, 75% aggregate and 60% in each of P/C/M; English proficiency",
+  "mode": "online",
+  "seats_or_intake": "~2,500+ seats across Pilani, Goa, Hyderabad campuses",
+  "url": "https://www.bitsadmission.com",
+  "status_note": "ESTIMATED — 2027 brochure not out; dates mirror the 2026 schedule (mid-Dec open, mid-Mar close)"
+ },
+ {
+  "name": "VITEEE 2027",
+  "org": "VIT (Vellore Institute of Technology)",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Engineering"
+  ],
+  "exam": "VITEEE",
+  "exam_date": "expected April–May 2027",
+  "window_open": "expected October 2026 (last week; notification expected Oct 2026)",
+  "window_close": "expected March 2027",
+  "fee": "₹1,350 all categories",
+  "eligibility": "10+2 with 60% aggregate in PCM/PCB (50% for reserved/NE states); DOB on/after 1 Jul 2005",
+  "mode": "online",
+  "seats_or_intake": "~5,000+ B.Tech seats across VIT Vellore, Chennai, AP, Bhopal",
+  "url": "https://viteee.vit.ac.in",
+  "status_note": "ESTIMATED — portals report application opening last week of Oct 2026; official notification awaited"
+ },
+ {
+  "name": "MHT-CET 2027 (PCM & PCB)",
+  "org": "State CET Cell, Maharashtra",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Engineering",
+   "Pharmacy",
+   "Agriculture"
+  ],
+  "exam": "MHT-CET",
+  "exam_date": "expected April 2027",
+  "window_open": "expected December 2026",
+  "window_close": "expected January 2027",
+  "fee": "₹1,000 Gen; ₹800 reserved-Maharashtra (prev cycle)",
+  "eligibility": "10+2 with PCM (engineering) or PCB (pharmacy); open all-India, 85% seats for Maharashtra candidates",
+  "mode": "online",
+  "url": "https://cetcell.mahacet.org",
+  "status_note": "ESTIMATED — no official 2027 notification yet; 2026 cycle registered Dec-Jan with April exams, same pattern expected"
+ },
+ {
+  "name": "KCET 2027",
+  "org": "Karnataka Examinations Authority (KEA)",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Engineering",
+   "Pharmacy",
+   "Agriculture"
+  ],
+  "exam": "KCET (UGCET)",
+  "exam_date": "expected April 2027",
+  "window_open": "expected January 2027",
+  "window_close": "expected February 2027",
+  "fee": "₹500 Gen; ₹250 SC/ST Karnataka (prev cycle)",
+  "eligibility": "10+2 with PCM; Karnataka domicile/study requirement for most govt-quota seats",
+  "mode": "offline",
+  "url": "https://cetonline.karnataka.gov.in/kea/",
+  "status_note": "ESTIMATED — KEA typically releases the form Jan-Feb; 2027 notification awaited"
+ },
+ {
+  "name": "WBJEE 2027",
+  "org": "West Bengal Joint Entrance Examinations Board",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Engineering",
+   "Pharmacy"
+  ],
+  "exam": "WBJEE",
+  "exam_date": "expected April 2027",
+  "window_open": "expected February 2027",
+  "window_close": "expected March 2027",
+  "fee": "₹500 Gen; ₹400 reserved (prev cycle)",
+  "eligibility": "10+2 with PCM; minimum age 17; open all-India (domicile matters for some quotas)",
+  "mode": "offline",
+  "url": "https://wbjeeb.nic.in",
+  "status_note": "ESTIMATED — portals project Feb 2027 form release and April OMR exam per the board's usual cycle"
+ },
+ {
+  "name": "NID DAT 2027 (B.Des)",
+  "org": "National Institute of Design",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Design"
+  ],
+  "exam": "NID DAT (Prelims + Mains)",
+  "exam_date": "Prelims expected December 2026; Mains ~Mar-Apr 2027",
+  "window_open": "expected September 2026 (first week)",
+  "window_close": "expected October 2026",
+  "fee": "₹3,000 Gen/OBC; ₹1,500 reserved (prev cycle)",
+  "eligibility": "10+2 any stream, pass/appearing; upper age ~20 for Gen with category relaxations",
+  "mode": "offline",
+  "url": "https://admissions.nid.edu",
+  "status_note": "ESTIMATED — registration expected to open Sep-Oct 2026 per pattern; watch admissions.nid.edu from early Sept 2026"
+ },
+ {
+  "name": "NIFT 2027 Entrance (NIFTEE)",
+  "org": "NTA (for NIFT)",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Design",
+   "Fashion Technology"
+  ],
+  "exam": "NIFTEE (GAT + CAT)",
+  "exam_date": "expected February 2027 (3rd week)",
+  "window_open": "expected December 2026",
+  "window_close": "expected January 2027 (late fee ₹5,000 after)",
+  "fee": "₹1,500 Gen/OBC; ₹750 reserved (prev cycle)",
+  "eligibility": "B.Des: 10+2 any stream; B.FTech: 10+2 with PCM; no upper age limit",
+  "mode": "hybrid",
+  "seats_or_intake": "~4,000+ seats across 19 NIFT campuses",
+  "url": "https://exams.nta.nic.in/niftee",
+  "status_note": "ESTIMATED — NTA typically opens NIFT applications in Dec; 2027 notification awaited"
+ },
+ {
+  "name": "UCEED 2027",
+  "org": "IIT Bombay",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Design"
+  ],
+  "exam": "UCEED",
+  "exam_date": "2027-01-17 (Sunday, reported announced)",
+  "window_open": "expected October 2026 (details due on official site by 1 Oct 2026)",
+  "window_close": "expected November 2026 (2026 cycle closed 10 Nov)",
+  "fee": "₹4,000 Gen male; ₹2,000 female/reserved; late fee ₹500 (2026 rates)",
+  "eligibility": "10+2 any stream (passed 2026 or appearing 2027); max 2 consecutive attempts",
+  "mode": "hybrid",
+  "seats_or_intake": "B.Des at IIT Bombay/Delhi/Guwahati/Hyderabad/Jodhpur + other institutes accepting scores",
+  "url": "https://www.uceed.iitb.ac.in",
+  "status_note": "UPCOMING — exam date 17 Jan 2027 reported by admission portals; registration window Oct-Nov 2026 is ESTIMATED (official site still shows 2026 cycle)"
+ },
+ {
+  "name": "NEST 2027",
+  "org": "NISER Bhubaneswar & UM-DAE CEBS Mumbai",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Science"
+  ],
+  "exam": "NEST",
+  "exam_date": "expected June 2027 (first week; NEST 2026 was 6 Jun)",
+  "window_open": "expected February 2027",
+  "window_close": "expected April 2027",
+  "fee": "₹1,400 Gen/OBC male; ₹700 female & SC/ST (2026 rates)",
+  "eligibility": "Class 12 science stream, passed 2025/2026 or appearing 2027, ~60% aggregate",
+  "mode": "online",
+  "seats_or_intake": "~200 (NISER) + ~57 (CEBS) Integrated MSc seats",
+  "url": "https://www.nestexam.in",
+  "status_note": "ESTIMATED — notification typically lands Jan-Feb with June CBT; 2027 schedule not yet published"
+ },
+ {
+  "name": "IISER IAT 2027",
+  "org": "IISERs (joint admissions)",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Science"
+  ],
+  "exam": "IISER Aptitude Test (IAT)",
+  "exam_date": "expected June 2027 (IAT 2026 was 7 Jun)",
+  "window_open": "expected March 2027 (notification expected Feb 2027)",
+  "window_close": "expected April 2027",
+  "fee": "₹2,000 Gen; ₹1,000 reserved (2026 rates)",
+  "eligibility": "Class 12 with science stream passed 2025/2026 or appearing 2027",
+  "mode": "online",
+  "seats_or_intake": "~2,000+ BS-MS seats across 7 IISERs (IAT score also used by IISc & IISERs' BS programs)",
+  "url": "https://www.iiseradmission.in",
+  "status_note": "ESTIMATED — portals project first-week-of-March 2027 application start per the annual Feb-notification/June-exam cycle"
+ },
+ {
+  "name": "ISI Admission Test 2027 (B.Stat/B.Math)",
+  "org": "Indian Statistical Institute",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Statistics",
+   "Mathematics"
+  ],
+  "exam": "ISI Admission Test",
+  "exam_date": "expected May 2027 (2nd week Sunday)",
+  "window_open": "expected February 2027 (2nd week)",
+  "window_close": "expected March 2027",
+  "fee": "₹1,500 Gen; ₹750 reserved (prev cycle)",
+  "eligibility": "10+2 with Mathematics and English; B.Stat (Kolkata) / B.Math (Bengaluru)",
+  "mode": "offline",
+  "seats_or_intake": "~60 B.Stat + ~60 B.Math seats",
+  "url": "https://admission.isical.ac.in",
+  "status_note": "ESTIMATED — ISI portal still on the 2026 cycle; Feb registration / mid-May pen-paper test is the standing pattern"
+ },
+ {
+  "name": "Ashoka University UG 2027 intake",
+  "org": "Ashoka University",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Liberal Arts & Sciences"
+  ],
+  "exam": "Profile-based: Ashoka Aptitude Test + on-spot essay + interview",
+  "exam_date": "Round 1 assessments expected December 2026",
+  "window_open": "expected October 2026 (2026-intake Round 1 opened 13 Oct 2025)",
+  "window_close": "Round 1 expected November 2026; Rounds 2-4 through ~May 2027",
+  "eligibility": "Class 12 any stream (Indian/international boards); holistic review, SAT optional; one application across rounds",
+  "seats_or_intake": "~1,000+ per cohort",
+  "url": "https://www.ashoka.edu.in/undergraduate-admissions-timelines/",
+  "status_note": "ESTIMATED — 2026-intake application form is closed (verified on official site); 2027-intake Round 1 expected to open Oct 2026 per last year's calendar. Not open as of 19 Jul 2026"
+ },
+ {
+  "name": "Krea University SIAS UG 2027 intake",
+  "org": "Krea University (SIAS)",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Liberal Arts & Sciences"
+  ],
+  "exam": "Profile-based: Krea application + KAT/Immersive Case + interview",
+  "exam_date": "Round 1 assessments expected Nov 2026-Jan 2027",
+  "window_open": "expected October 2026 (2026-intake Round 1 opened 9 Oct 2025)",
+  "window_close": "Round 1 expected January 2027; later rounds follow",
+  "eligibility": "Class 12 any stream; holistic 'Interwoven Learning' assessment",
+  "url": "https://krea.edu.in/sias/sias-admissions-schedule/",
+  "status_note": "ESTIMATED — official SIAS schedule page currently shows admissions closed with next cohort 'opening soon'; Oct 2026 open expected per prior cycle"
+ },
+ {
+  "name": "Plaksha University B.Tech 2027 intake",
+  "org": "Plaksha University",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Engineering"
+  ],
+  "exam": "Profile-based: application + interview (JEE/SAT/board scores considered)",
+  "exam_date": "round decisions rolling, ~Dec 2026-Jun 2027",
+  "window_open": "expected October 2026",
+  "window_close": "round deadlines expected Nov 2026 through Jun 2027 (single application, one round only)",
+  "eligibility": "Class 12 with Mathematics (PCM for most streams); holistic review",
+  "seats_or_intake": "~300 B.Tech seats",
+  "url": "https://btech-admissions.plaksha.edu.in",
+  "status_note": "ESTIMATED — 2026 cycle rounds ended Jun 2026; 2027 rounds expected to open ~Oct 2026 following the Feb/Mar/Apr/Jun round-deadline pattern"
+ },
+ {
+  "name": "FLAME University UG 2027 intake",
+  "org": "FLAME University, Pune",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Liberal Arts & Sciences",
+   "Business"
+  ],
+  "exam": "FLAME Entrance Aptitude Test (FEAT) / SAT / CUET + interview",
+  "exam_date": "cycle-wise, ~Oct 2026-Jun 2027",
+  "window_open": "expected September 2026 (multiple admission cycles)",
+  "window_close": "final cycle expected ~June 2027 (2026-intake final deadline was 21 Jun 2026)",
+  "eligibility": "Class 12 any stream; selection via FEAT/SAT scores + interview",
+  "url": "https://www.flame.edu.in/admissions/ug/admission-schedule",
+  "status_note": "ESTIMATED — 2026-intake cycles ended 21 Jun 2026; 2027-intake first cycle expected Sept-Oct 2026 per annual pattern"
+ },
+ {
+  "name": "Christ University UG 2027",
+  "org": "Christ University, Bengaluru",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "All"
+  ],
+  "exam": "Christ Entrance Test + micro-presentation + interview",
+  "exam_date": "test sessions expected Jan-May 2027",
+  "window_open": "expected January 2027",
+  "window_close": "program-wise, expected April-May 2027",
+  "eligibility": "Class 12 any stream (program-specific subject requirements); UG across humanities, science, commerce, management",
+  "mode": "hybrid",
+  "url": "https://christuniversity.in/admission-home",
+  "status_note": "ESTIMATED — 2027 notification expected late 2026; applications typically open January with rolling selection rounds"
+ },
+ {
+  "name": "Symbiosis SET 2027",
+  "org": "Symbiosis International (Deemed University)",
+  "stage": "ug",
+  "region": "india",
+  "fields": [
+   "Business",
+   "Liberal Arts",
+   "Computer Applications"
+  ],
+  "exam": "SET (Symbiosis Entrance Test)",
+  "exam_date": "expected May 2027",
+  "window_open": "expected December 2026",
+  "window_close": "expected April 2027",
+  "fee": "~₹2,250 per test (prev cycle)",
+  "eligibility": "Class 12 with 50% (45% reserved); gateway to SIU UG programs (BBA, BCA, BA, B.Sc etc.)",
+  "mode": "online",
+  "url": "https://www.set-test.org",
+  "status_note": "ESTIMATED — official 2027 dates not announced; Dec-Apr registration with May exam per prior cycles"
+ },
+ {
+  "name": "XAT 2027",
+  "org": "XLRI Jamshedpur",
+  "stage": "mba",
+  "region": "india",
+  "url": "https://xatonline.in/",
+  "status_note": "VERIFIED-OPEN (registration live since 15 Jul 2026; first-day registrants got test-city preference; XLRI PGDM BM/HRM applications are made by ticking programmes inside this same form)",
+  "window_open": "2026-07-15",
+  "window_close": "2026-12-06",
+  "exam": "XAT",
+  "exam_date": "2027-01-03 (2:00-5:00 PM)",
+  "fee": "₹2,300 (+₹200 per XLRI programme selected)",
+  "eligibility": "Any bachelor's degree (min 3 years); final-year students eligible",
+  "fields": [
+   "Business"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "ISB PGP Class of 2028 (2027-28 cycle)",
+  "org": "Indian School of Business (Hyderabad/Mohali)",
+  "stage": "mba",
+  "region": "india",
+  "url": "https://www.isb.edu/programmes/post-graduate-programmes/pgp-in-management/application-deadlines",
+  "status_note": "VERIFIED-OPEN (official deadlines published; each round's application opens ~2 months before its deadline; late applications auto-roll to next round)",
+  "window_open": "2026-07",
+  "window_close": "R1: 2026-09-20; R2: 2026-12-06; R3: 2027-01-17",
+  "exam": "GMAT/GRE + profile-based (essays, interview)",
+  "exam_date": "",
+  "fee": "₹5,000 (R1), rises ~₹2,500 per later round (per reported fee ladder)",
+  "eligibility": "Bachelor's degree + valid GMAT/GRE; typically min ~2 years full-time work experience",
+  "seats_or_intake": "~900 across Hyderabad + Mohali",
+  "fields": [
+   "Business"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "MAT September 2026",
+  "org": "AIMA",
+  "stage": "mba",
+  "region": "india",
+  "url": "https://mat.aima.in/",
+  "status_note": "VERIFIED-OPEN (September session registration started; MAT runs ~4 sessions/year)",
+  "window_close": "PBT: 2026-09-07; CBT: 2026-09-14",
+  "exam": "MAT",
+  "exam_date": "PBT 2026-09-13; CBT 2026-09-20",
+  "fee": "₹2,300 (one mode) / ₹4,000 (both PBT+CBT)",
+  "eligibility": "Any graduate in any discipline; final-year eligible",
+  "fields": [
+   "Business"
+  ],
+  "mode": "hybrid"
+ },
+ {
+  "name": "UPSC Civil Services Examination 2027",
+  "org": "UPSC",
+  "stage": "pg",
+  "region": "india",
+  "url": "https://www.upsc.gov.in/examinations/exam-calendar",
+  "status_note": "UPCOMING (official UPSC Calendar 2027 released 20 May 2026 — dates are announced, not estimates; recruitment exam, not a degree admission)",
+  "window_open": "2027-01-13",
+  "window_close": "2027-02-02",
+  "exam": "CSE Prelims + Mains + Interview",
+  "exam_date": "Prelims 2027-05-23; Mains from 2027-08-20",
+  "fee": "₹100 Prelims (women/SC/ST/PwBD exempt)",
+  "eligibility": "Any graduate, age 21-32 (Gen) as on 1 Aug 2027; attempt limits apply",
+  "fields": [
+   "Civil Services"
+  ],
+  "mode": "offline"
+ },
+ {
+  "name": "CEED 2027",
+  "org": "IIT Bombay",
+  "stage": "pg",
+  "region": "india",
+  "url": "https://www.ceed.iitb.ac.in/",
+  "status_note": "UPCOMING (exam date 17 Jan 2027 announced by IIT Bombay; registration window Oct-Nov 2026 still per typical pattern)",
+  "window_open": "expected October 2026",
+  "window_close": "expected November 2026 (late fee ~2nd week Nov)",
+  "exam": "CEED (Part A CBT + Part B pen-paper)",
+  "exam_date": "2027-01-17 (9 AM-12 noon)",
+  "fee": "₹4,000 (₹2,000 women/SC/ST/PwD, per last cycle)",
+  "eligibility": "Bachelor's degree (min 3 years) or equivalent in any stream, for MDes/PhD design",
+  "fields": [
+   "Design"
+  ],
+  "mode": "hybrid"
+ },
+ {
+  "name": "CAT 2026",
+  "org": "IIMs (convening IIM widely reported as IIM Indore); NTA-style CBT",
+  "stage": "mba",
+  "region": "india",
+  "url": "https://iimcat.ac.in/",
+  "status_note": "ESTIMATED (official notification not yet out as of 19 Jul 2026; expected ~26 Jul 2026; all dates below per consistent typical-pattern reporting; IIM PGP/MBA 2027-29 programme selection happens inside this same CAT form — shortlists ~Jan 2027, WAT/PI Feb-Apr 2027)",
+  "window_open": "expected August 2026 (reported 1 Aug)",
+  "window_close": "expected September 2026 (reported ~20 Sep)",
+  "exam": "CAT",
+  "exam_date": "expected 2026-11-29",
+  "fee": "₹2,600 Gen/EWS/OBC, ₹1,300 SC/ST/PwD (expected)",
+  "eligibility": "Bachelor's with 50% (45% SC/ST/PwD); final-year eligible",
+  "fields": [
+   "Business"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "GATE 2027",
+  "org": "IIT Madras (widely reported organising institute)",
+  "stage": "pg",
+  "region": "india",
+  "url": "https://gate.iitm.ac.in/",
+  "status_note": "ESTIMATED (official brochure pending as of 19 Jul 2026; window 14 Aug - 21 Sep 2026 consistently reported, late window to ~30 Sep/13 Oct with ₹500 extra; fee figures still vary across sources)",
+  "window_open": "expected August 2026 (reported 14 Aug)",
+  "window_close": "expected September 2026 (reported 21 Sep regular)",
+  "exam": "GATE (30 papers, CBT)",
+  "exam_date": "expected February 2027 (first two weekends)",
+  "fee": "₹1,800-2,000 Gen regular (reported; +₹500 late)",
+  "eligibility": "Bachelor's in engg/science/arts/commerce (3rd year onwards eligible); gateway to MTech/ME/PhD + PSU hiring",
+  "fields": [
+   "Engineering",
+   "Science"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "IIT JAM 2027",
+  "org": "Organising IIT not yet announced (zonal IITs/IISc by rotation)",
+  "stage": "pg",
+  "region": "india",
+  "url": "https://jam2026.iitb.ac.in/",
+  "status_note": "ESTIMATED (notification expected late Aug/early Sep 2026; organising institute to be revealed then; JAM 2026 was IIT Bombay — URL is the latest official cycle site until the 2027 portal goes live)",
+  "window_open": "expected September 2026",
+  "window_close": "expected October 2026",
+  "exam": "JAM (7 papers: MA/MS/PH/CY/BT/GG/EN)",
+  "exam_date": "expected February 2027 (~mid-Feb Sunday)",
+  "fee": "₹2,000 one paper Gen; ₹1,000 women/SC/ST/PwD (per JAM 2026)",
+  "eligibility": "Bachelor's degree in science/relevant field; pass marks only, no percentage cutoff",
+  "fields": [
+   "Science"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "CMAT 2027",
+  "org": "NTA",
+  "stage": "mba",
+  "region": "india",
+  "url": "https://exams.nta.ac.in/CMAT/",
+  "status_note": "ESTIMATED (NTA notification pending; registration expected Oct-Dec 2026, exam reported ~24 Jan 2027 per typical pattern)",
+  "window_open": "expected October 2026",
+  "window_close": "expected December 2026",
+  "exam": "CMAT",
+  "exam_date": "expected 2027-01-24",
+  "fee": "₹2,500 Gen male; ₹1,250 female/reserved (expected)",
+  "eligibility": "Any graduate; final-year eligible; for AICTE-approved PGDM/MBA colleges",
+  "fields": [
+   "Business"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "CUET PG 2027",
+  "org": "NTA",
+  "stage": "pg",
+  "region": "india",
+  "url": "https://exams.nta.ac.in/CUET-PG/",
+  "status_note": "ESTIMATED (registration expected 2nd week Dec 2026; multi-day exam expected March 2027 per last cycle)",
+  "window_open": "expected December 2026",
+  "window_close": "expected February 2027",
+  "exam": "CUET-PG",
+  "exam_date": "expected March 2027 (multi-day, multi-shift)",
+  "fee": "~₹1,400 for 2 papers Gen (per CUET PG 2026 pattern)",
+  "eligibility": "Bachelor's in relevant discipline; gateway to PG at central + participating universities",
+  "fields": [
+   "All"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "CLAT 2027 (PG)",
+  "org": "Consortium of NLUs",
+  "stage": "pg",
+  "region": "india",
+  "url": "https://consortiumofnlus.ac.in/",
+  "status_note": "ESTIMATED (notification was expected 2nd week Jul 2026; registration expected early Aug 2026, exam expected first week Dec 2026)",
+  "window_open": "expected August 2026",
+  "window_close": "expected October/November 2026",
+  "exam": "CLAT PG",
+  "exam_date": "expected December 2026 (first Sunday)",
+  "fee": "₹4,000 Gen; ₹3,500 SC/ST/BPL (per last cycle)",
+  "eligibility": "LLB or equivalent with 50% (45% SC/ST); final-year eligible; for LLM at 26 NLUs + IIULER Goa",
+  "fields": [
+   "Law"
+  ],
+  "mode": "offline"
+ },
+ {
+  "name": "NIMCET 2027",
+  "org": "NITs (rotational conductor, via nimcet.admissions.nic.in)",
+  "stage": "pg",
+  "region": "india",
+  "url": "https://nimcet.admissions.nic.in/",
+  "status_note": "ESTIMATED (no official notification yet; registration typically Mar-Apr 2027, exam expected June 2027)",
+  "window_open": "expected March 2027",
+  "window_close": "expected April 2027",
+  "exam": "NIMCET (CBT, 120 Qs / 1000 marks)",
+  "exam_date": "expected June 2027",
+  "fee": "~₹2,500 Gen/OBC; ~₹1,250 SC/ST/PwD (per last cycle)",
+  "eligibility": "BSc/BCA/BVoc/BE-BTech with Maths at 10+2 or UG, 60% (55% reserved); for MCA at 11 NITs + 2 IIITs",
+  "fields": [
+   "Computer Applications"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "SPJIMR PGDM 2027-29",
+  "org": "SPJIMR Mumbai",
+  "stage": "mba",
+  "region": "india",
+  "url": "https://www.spjimr.org/course/post-graduate-diploma-in-management-pgdm/admissions/",
+  "status_note": "ESTIMATED (window expected mid-Sep to end-Nov 2026; interviews Jan-Feb 2027; programme starts Jun 2027)",
+  "window_open": "expected September 2026",
+  "window_close": "expected November 2026",
+  "exam": "CAT 2026 / XAT 2027 / GMAT (profile-based shortlisting)",
+  "exam_date": "",
+  "fee": "₹2,000 application processing fee",
+  "eligibility": "Bachelor's with 50%; consistent 10th/12th/UG record; profile + versatility weighed",
+  "fields": [
+   "Business"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "MDI Gurgaon PGDM 2027-29",
+  "org": "MDI Gurgaon",
+  "stage": "mba",
+  "region": "india",
+  "url": "https://admissions.mdi.ac.in/",
+  "status_note": "ESTIMATED (2027-29 form expected to open ~Sep 2026 and close late Nov 2026, mirroring last cycle's late-Nov close; admission via CAT 2026)",
+  "window_open": "expected September 2026",
+  "window_close": "expected November 2026",
+  "exam": "CAT 2026 (GMAT for select categories)",
+  "exam_date": "expected 2026-11-29 (CAT)",
+  "fee": "~₹3,000 (per prior cycle, unverified for 2027-29)",
+  "eligibility": "Bachelor's with 50%; final-year eligible; PGDM/PGDM-HRM/PGDM-IB",
+  "fields": [
+   "Business"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "SNAP 2026",
+  "org": "Symbiosis International University",
+  "stage": "mba",
+  "region": "india",
+  "url": "https://www.snaptest.org/",
+  "status_note": "ESTIMATED (notification expected ~1 Aug 2026; three test dates 6/14/20 Dec 2026 reported but official confirmation pending)",
+  "window_open": "expected August 2026",
+  "window_close": "expected November 2026",
+  "exam": "SNAP (up to 3 attempts, best score counts)",
+  "exam_date": "expected 2026-12-06, 2026-12-14, 2026-12-20",
+  "fee": "₹2,250 per attempt + ₹1,000 per SIU programme",
+  "eligibility": "Bachelor's with 50% (45% SC/ST); for 16 Symbiosis B-schools",
+  "fields": [
+   "Business"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "NMAT by GMAC 2026",
+  "org": "GMAC",
+  "stage": "mba",
+  "region": "india",
+  "url": "https://www.mba.com/exams/nmat",
+  "status_note": "ESTIMATED (registration expected ~1 Aug - 10 Oct 2026; 75-day self-scheduled exam window Nov 5 - Dec 19, 2026 reported, GMAC notification pending)",
+  "window_open": "expected August 2026",
+  "window_close": "expected October 2026",
+  "exam": "NMAT (self-scheduled, up to 3 attempts)",
+  "exam_date": "expected window 2026-11-05 to 2026-12-19",
+  "fee": "~₹3,600 + GST (per prior cycle)",
+  "eligibility": "Bachelor's with 50%; for NMIMS + 50+ B-schools in India and abroad",
+  "fields": [
+   "Business"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "IIFT MBA (IB) 2027-29",
+  "org": "IIFT Delhi/Kolkata/Kakinada",
+  "stage": "mba",
+  "region": "india",
+  "url": "https://www.iift.ac.in/iift/new-admissions.php",
+  "status_note": "ESTIMATED (own NTA exam discontinued since 2024 — admission now via CAT 2026; IIFT application expected to open Oct 2026, mirroring last cycle's 17-Oct opening)",
+  "window_open": "expected October 2026",
+  "window_close": "expected December 2026",
+  "exam": "CAT 2026 (separate IIFT application + WAT/PI)",
+  "exam_date": "expected 2026-11-29 (CAT)",
+  "fee": "~₹2,500 (per prior cycle, unverified)",
+  "eligibility": "Bachelor's with 50% (45% reserved); final-year eligible; MBA-IB and MBA-BA",
+  "fields": [
+   "Business"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "IIT Madras BS in Data Science & Applications — Qualifier for September 2026 term",
+  "org": "IIT Madras",
+  "stage": "online-degree",
+  "region": "india",
+  "mode": "online",
+  "fields": [
+   "Data Science",
+   "Programming"
+  ],
+  "exam": "IITM BS Qualifier Exam (after 4 weeks of qualifier coursework)",
+  "exam_date": "",
+  "window_open": "2026-07-01",
+  "window_close": "2026-09-12",
+  "fee": "₹4,000 (General/OBC); ₹2,000 SC/ST/PwD; ₹1,000 SC/ST+PwD",
+  "eligibility": "Class 12 pass (any stream, any age); Class 11-complete students may apply, must pass Class 12 before joining",
+  "seats_or_intake": "No seat cap (qualifier-based entry)",
+  "url": "https://study.iitm.ac.in/ds/admissions.html",
+  "status_note": "VERIFIED-OPEN — official site: qualifier applications open for Sep 2026 term, last date Sep 12, 2026"
+ },
+ {
+  "name": "IIM Ahmedabad MBA-PGPX 2027-28 — Round 1",
+  "org": "IIM Ahmedabad",
+  "stage": "exec",
+  "region": "india",
+  "mode": "offline",
+  "fields": [
+   "Business",
+   "General Management"
+  ],
+  "exam": "GMAT/GRE (test-centre based, taken within last 5 years; online versions not accepted)",
+  "exam_date": "",
+  "window_open": "2026-07-06",
+  "window_close": "2026-09-02",
+  "fee": "",
+  "eligibility": "Graduate with minimum 4 years full-time work-ex as on March 31, 2027 (batch avg 8.5-9 yrs); program fee ~₹35L",
+  "seats_or_intake": "~140 (typical)",
+  "url": "https://www.iima.ac.in/academics/MBA-PGPX/admission",
+  "status_note": "VERIFIED-OPEN — R1 open Jul 6 to Sep 2, 2026 for Class of 2027-28"
+ },
+ {
+  "name": "IIM Bangalore EPGP 2027 — Round 1",
+  "org": "IIM Bangalore",
+  "stage": "exec",
+  "region": "india",
+  "mode": "offline",
+  "fields": [
+   "Business",
+   "General Management"
+  ],
+  "exam": "GMAT/GRE",
+  "exam_date": "Interviews Sep 5-6, 2026 (Bangalore/Delhi/Mumbai/Kolkata); offers by Sep 21, 2026",
+  "window_open": "2026-07-01",
+  "window_close": "2026-08-17",
+  "fee": "₹5,000 (Round 1)",
+  "eligibility": "Minimum 5 years full-time work experience before March 31, 2027; one-year full-time residential MBA",
+  "seats_or_intake": "",
+  "url": "https://www.iimb.ac.in/epgp-admissions",
+  "status_note": "VERIFIED-OPEN — R1 closes Aug 17, 2026 5:00 PM IST"
+ },
+ {
+  "name": "IIM Calcutta MBAEx 2027-28 (21st cohort) — Round 1",
+  "org": "IIM Calcutta",
+  "stage": "exec",
+  "region": "india",
+  "mode": "offline",
+  "fields": [
+   "Business",
+   "General Management"
+  ],
+  "exam": "GMAT/GRE",
+  "exam_date": "",
+  "window_open": "expected July 2026 (admission process formally commenced)",
+  "window_close": "expected August 2026",
+  "fee": "",
+  "eligibility": "Graduate with minimum 5 years professional/managerial work-ex; one-year full-time residential MBA",
+  "seats_or_intake": "",
+  "url": "https://www.iimcal.ac.in/programs/pgpex/mba-for-executives-programme",
+  "status_note": "VERIFIED-OPEN — 21st cohort admissions commenced per multiple reports; exact R1 close date not yet published (prior-year R1 closed Aug 20), so deadline is ESTIMATED"
+ },
+ {
+  "name": "IIM Lucknow IPMX 2027-28 (20th batch) — Phase 1",
+  "org": "IIM Lucknow (Noida campus)",
+  "stage": "exec",
+  "region": "india",
+  "mode": "offline",
+  "fields": [
+   "Business",
+   "Global Leadership"
+  ],
+  "exam": "GMAT/GRE",
+  "exam_date": "",
+  "window_open": "expected August 2026",
+  "window_close": "expected October 2026",
+  "fee": "",
+  "eligibility": "Minimum 5 years full-time post-graduation work-ex; one-year full-time residential; program fee ~₹26L (2026-27)",
+  "seats_or_intake": "",
+  "url": "https://www.iiml.ac.in/programme/mba-executives/ipmx",
+  "status_note": "ESTIMATED — 20th batch launches April 2027; prior cycle Phase 1 closed Oct 17, 2025, so Phase 1 deadline expected ~Oct 2026"
+ },
+ {
+  "name": "ISB PGPpro 2027-28 (Hyderabad/Delhi-NCR weekend cohort) — Round 1",
+  "org": "Indian School of Business",
+  "stage": "exec",
+  "region": "india",
+  "mode": "hybrid",
+  "fields": [
+   "Business",
+   "Management"
+  ],
+  "exam": "Profile-based + ISB admission process; no GMAT/GRE required",
+  "exam_date": "",
+  "window_open": "expected September 2026",
+  "window_close": "expected November 2026",
+  "fee": "",
+  "eligibility": "Graduate with minimum 5 years full-time work experience; 18-month weekend format (alternate Sat-Sun) for working professionals",
+  "seats_or_intake": "",
+  "url": "https://www.isb.edu/programmes/post-graduate-programmes/pgp-pro/application-deadlines",
+  "status_note": "ESTIMATED — 2026-27 cohort rounds closed (R1 Nov 9 2025, R3 Apr 19 2026); next cycle R1 expected ~Nov 2026 per ISB's staggered 3-round pattern"
+ },
+ {
+  "name": "ISB PGPMAX 2027-28 (Executive MBA for senior leaders)",
+  "org": "Indian School of Business",
+  "stage": "exec",
+  "region": "india",
+  "mode": "hybrid",
+  "fields": [
+   "Business",
+   "Senior Leadership"
+  ],
+  "exam": "Profile + interview based; no GMAT/GRE required",
+  "exam_date": "",
+  "window_open": "expected August 2026",
+  "window_close": "expected March 2027 (final round)",
+  "fee": "",
+  "eligibility": "Senior executives, typically 10+ years work-ex; modular on-campus format while working",
+  "seats_or_intake": "",
+  "url": "https://www.isb.edu/programmes/post-graduate-programmes/pgp-max/application-deadlines",
+  "status_note": "ESTIMATED — ISB site says Class of 2026-27 applications closed and next-cycle dates 'to be announced soon'; prior cycle final deadline was Mar 15, 2026"
+ },
+ {
+  "name": "XLRI PGDM (General Management) 2027-28 — for working professionals",
+  "org": "XLRI Jamshedpur",
+  "stage": "exec",
+  "region": "india",
+  "mode": "offline",
+  "fields": [
+   "Business",
+   "General Management"
+  ],
+  "exam": "XAT 2027 or GMAT/GRE (scores from Jan 1, 2023 to Dec 31, 2026)",
+  "exam_date": "XAT expected early January 2027",
+  "window_open": "2026-07-15",
+  "window_close": "2026-12-06 (via XAT); 2026-12-31 (via GMAT/GRE)",
+  "fee": "",
+  "eligibility": "Bachelor's (3-yr) + minimum 3 years managerial/supervisory work-ex by March 31, 2027; 18-month full-time residential, starts mid-April 2027",
+  "seats_or_intake": "",
+  "url": "https://xlri.ac.in/academic-programmes/school-of-business/pgdgm-admission-procedure.php",
+  "status_note": "VERIFIED-OPEN — application window live; XAT-route deadline Dec 6, 2026, GMAT/GRE route Dec 31, 2026"
+ },
+ {
+  "name": "IGNOU July 2026 session — UG/PG/Diploma/Certificate admissions (ODL + online)",
+  "org": "IGNOU",
+  "stage": "online-degree",
+  "region": "india",
+  "mode": "online",
+  "fields": [
+   "All"
+  ],
+  "exam": "none (direct admission for most programmes)",
+  "exam_date": "",
+  "window_open": "2026-05-06",
+  "window_close": "2026-07-31",
+  "fee": "Registration fee nominal; programme fee varies by course",
+  "eligibility": "Varies: 10+2 for UG, any graduate for PG; open-university relaxed entry, no age limit",
+  "seats_or_intake": "Unlimited (open university)",
+  "url": "https://ignouadmission.samarth.edu.in/",
+  "status_note": "VERIFIED-OPEN — July 2026 session deadline extended from Jul 15 to Jul 31, 2026 for all ODL/online programmes (12 days left)"
+ },
+ {
+  "name": "Georgia Tech OMSCS — Spring 2027 intake",
+  "org": "Georgia Institute of Technology",
+  "stage": "online-degree",
+  "region": "us",
+  "mode": "online",
+  "fields": [
+   "Computer Science"
+  ],
+  "exam": "none (no GRE required)",
+  "exam_date": "",
+  "window_open": "2026-06-01",
+  "window_close": "2026-08-15",
+  "fee": "$95 domestic / $105 international application fee",
+  "eligibility": "Bachelor's in CS or related field (or strong CS background), preferred GPA 3.0+; total program ~$7,000",
+  "seats_or_intake": "Large-scale intake (no fixed cap)",
+  "url": "https://omscs.gatech.edu/apply",
+  "status_note": "VERIFIED-OPEN — Spring matriculation deadline is Aug 15 (applies to Spring 2027; all materials due by that date)"
+ },
+ {
+  "name": "UIUC Gies iMBA (online MBA via Coursera) — Spring/January 2027 intake",
+  "org": "University of Illinois Urbana-Champaign (Gies)",
+  "stage": "mba",
+  "region": "us",
+  "mode": "online",
+  "fields": [
+   "Business"
+  ],
+  "exam": "none (no GMAT required)",
+  "exam_date": "",
+  "window_open": "open on rolling basis (5 intakes/year: Jan, Mar, May, Aug, Oct)",
+  "window_close": "expected September 2026 (Priority 1/scholarship deadline for Spring); final deadline ~Nov-Dec 2026",
+  "fee": "",
+  "eligibility": "Bachelor's degree; work experience recommended (cohort avg ~10 yrs); total tuition ~$24k",
+  "seats_or_intake": "",
+  "url": "https://onlinemba.illinois.edu/admissions/imba/",
+  "status_note": "ESTIMATED — Gies confirms early-September scholarship/priority deadline pattern for Spring applicants; exact Jan 2027 dates not yet published"
+ },
+ {
+  "name": "UIUC Online MCS (Master of Computer Science via Coursera) — Spring 2027 intake",
+  "org": "University of Illinois Urbana-Champaign (Siebel School)",
+  "stage": "online-degree",
+  "region": "us",
+  "mode": "online",
+  "fields": [
+   "Computer Science"
+  ],
+  "exam": "none (no GRE required)",
+  "exam_date": "",
+  "window_open": "expected August 2026",
+  "window_close": "2026-10-30",
+  "fee": "",
+  "eligibility": "Bachelor's with minimum 3.2/4.0 GPA and adequate CS background; 32 credit hours, coursework-only",
+  "seats_or_intake": "",
+  "url": "https://siebelschool.illinois.edu/academics/graduate/professional-mcs/online-master-computer-science",
+  "status_note": "UPCOMING — Spring 2027 application deadline Oct 30, 2026 confirmed on Siebel School deadlines page"
+ },
+ {
+  "name": "IIT Kanpur eMasters — next cohort (status alert)",
+  "org": "IIT Kanpur",
+  "stage": "online-degree",
+  "region": "india",
+  "mode": "online",
+  "fields": [
+   "Engineering",
+   "Data Science",
+   "Management",
+   "Finance"
+  ],
+  "exam": "none (profile-based, no GATE)",
+  "exam_date": "",
+  "window_open": "",
+  "window_close": "",
+  "fee": "",
+  "eligibility": "Working professionals with a graduate degree; executive-friendly 1-3 yr format",
+  "seats_or_intake": "",
+  "url": "https://online.iitk.ac.in/emasters/",
+  "status_note": "ESTIMATED — CAUTION: official eMasters page now displays 'No Future Admissions to eMasters Program'; IITK's replacement online M.Tech/M.Sc/PG-Diploma admissions for the current cycle closed Jun 25, 2026 — next window expected late 2026 at online.iitk.ac.in"
+ },
+ {
+  "name": "IIT Delhi Online PG Diploma / Certificate programmes (CEP-QIP) — 2026-27 cohorts",
+  "org": "IIT Delhi (CEP)",
+  "stage": "upskill",
+  "region": "india",
+  "mode": "online",
+  "fields": [
+   "Engineering",
+   "Management",
+   "Technology"
+  ],
+  "exam": "none / profile-based",
+  "exam_date": "",
+  "window_open": "expected September 2026",
+  "window_close": "expected December 2026",
+  "fee": "",
+  "eligibility": "Graduate/diploma holders; working professionals (certificate courses ₹70k-80k + GST; PG diploma cohorts via CEP portal)",
+  "seats_or_intake": "",
+  "url": "https://cepqip.iitd.ac.in/PG-Programme",
+  "status_note": "ESTIMATED — CEP portal lists online PG programmes but next-cohort dates not published; typical pattern is applications in autumn for January start"
+ },
+ {
+  "name": "BITS Pilani WILP — July 2026 batch (M.Tech/MBA/B.Tech work-integrated)",
+  "org": "BITS Pilani WILP",
+  "stage": "online-degree",
+  "region": "india",
+  "mode": "online",
+  "fields": [
+   "Engineering",
+   "Technology",
+   "Management"
+  ],
+  "exam": "none (application + employer/mentor details; UGC-approved degree)",
+  "exam_date": "",
+  "window_open": "2026-05-01",
+  "window_close": "2026-07-20",
+  "fee": "₹1,500 application fee (non-refundable)",
+  "eligibility": "Employed professionals; PG programmes need graduation with ~60% + minimum 1 year relevant work-ex",
+  "seats_or_intake": "Always-open rotating cohorts (2 batches/year)",
+  "url": "https://bits-pilani-wilp.ac.in/",
+  "status_note": "VERIFIED-OPEN — closes Jul 20, 2026 (TOMORROW); classes start Jul 24, 2026"
+ },
+ {
+  "name": "BITS Pilani WILP — January 2027 batch",
+  "org": "BITS Pilani WILP",
+  "stage": "online-degree",
+  "region": "india",
+  "mode": "online",
+  "fields": [
+   "Engineering",
+   "Technology",
+   "Management"
+  ],
+  "exam": "none",
+  "exam_date": "",
+  "window_open": "expected October 2026",
+  "window_close": "expected January 2027",
+  "fee": "₹1,500 application fee",
+  "eligibility": "Employed professionals; graduation ~60% + 1 year relevant work-ex for PG programmes",
+  "seats_or_intake": "",
+  "url": "https://bits-pilani-wilp.ac.in/",
+  "status_note": "ESTIMATED — prior Jan 2026 cycle opened ~Oct and closed Jan 7 (extended); Jan 2027 batch expected to follow same pattern"
+ },
+ {
+  "name": "NPTEL July-December 2026 certification semester (SWAYAM)",
+  "org": "NPTEL (IITs/IISc via SWAYAM)",
+  "stage": "upskill",
+  "region": "india",
+  "mode": "online",
+  "fields": [
+   "All"
+  ],
+  "exam": "Proctored in-person certification exam (optional, for certificate)",
+  "exam_date": "Exams Sep 19-20 and Oct 16-18 & 23-25, 2026; exam registration closes Aug 14, 2026",
+  "window_open": "2026-05-27",
+  "window_close": "2026-07-27 (4/8-week Set 1 courses); 2026-08-17 (12-week and Set 2 courses)",
+  "fee": "Enrollment free; exam ₹500-1,000 per course",
+  "eligibility": "Open to everyone — students and working professionals, no prerequisites",
+  "seats_or_intake": "1,055 courses this semester (132 new)",
+  "url": "https://swayam.gov.in/NPTEL",
+  "status_note": "VERIFIED-OPEN — courses start Jul 20, 2026; enrollment and exam registration windows open now"
+ },
+ {
+  "name": "Great Lakes PGPM 2027-28 (Chennai/Gurgaon) — Cycle 1",
+  "org": "Great Lakes Institute of Management",
+  "stage": "mba",
+  "region": "india",
+  "mode": "offline",
+  "fields": [
+   "Business",
+   "Management",
+   "AI & Analytics"
+  ],
+  "exam": "GMAT (post Jan 1, 2024) / CAT 2025-26 / XAT 2026-27 / NMAT 2025-26; profile-based early interviews",
+  "exam_date": "",
+  "window_open": "2026-07-01",
+  "window_close": "expected October 2026 (Cycle 1; official page says 'to be announced', 4 cycles total)",
+  "fee": "₹2,200 application fee",
+  "eligibility": "Bachelor's (min 50% across 10th/12th/UG) + 2+ years full-time work-ex by April 30, 2027",
+  "seats_or_intake": "",
+  "url": "https://www.greatlakes.edu.in/chennai/pgpm/admissions",
+  "status_note": "VERIFIED-OPEN — 2027-28 admissions portal open (careers360 confirms launch); cycle deadlines themselves not yet announced, so close date is ESTIMATED"
+ },
+ {
+  "name": "Common App 2026-27 (Fall 2027 US undergrad)",
+  "org": "Common Application Inc.",
+  "stage": "ug",
+  "region": "us",
+  "url": "https://www.commonapp.org/",
+  "status_note": "UPCOMING — opens 1 Aug 2026, confirmed by multiple 2026-27 cycle guides",
+  "window_open": "2026-08-01",
+  "window_close": "varies by college (Nov 2026 – Jan 2027 deadlines)",
+  "fee": "Free platform; per-college fees typically $50-$100 (waivers available)",
+  "exam": "SAT/ACT (test-optional at many colleges) + TOEFL/IELTS for Indian applicants",
+  "exam_date": "",
+  "eligibility": "Class 12 (any board/stream) completing by mid-2027; 1000+ member colleges",
+  "fields": [
+   "All"
+  ],
+  "mode": "online",
+  "seats_or_intake": "1000+ member colleges"
+ },
+ {
+  "name": "US Early Decision / Early Action round (Fall 2027)",
+  "org": "Individual US universities (via Common App / college portals)",
+  "stage": "ug",
+  "region": "us",
+  "url": "https://www.commonapp.org/apply/first-year-students",
+  "status_note": "UPCOMING — Nov 1 pattern confirmed for 2026-27 cycle by deadline trackers",
+  "window_open": "2026-08-01",
+  "window_close": "2026-11-01 (most ED/EA; some Nov 15)",
+  "fee": "$50-$100 per college",
+  "exam": "SAT/ACT (optional at many); binding commitment if ED",
+  "exam_date": "",
+  "eligibility": "Class 12 students; ED is binding, EA non-binding; one ED school at a time",
+  "fields": [
+   "All"
+  ],
+  "mode": "online",
+  "seats_or_intake": "Ivy League + most selective privates; decisions mid-Dec 2026"
+ },
+ {
+  "name": "US Regular Decision round (Fall 2027)",
+  "org": "Individual US universities (via Common App / college portals)",
+  "stage": "ug",
+  "region": "us",
+  "url": "https://www.commonapp.org/apply/first-year-students",
+  "status_note": "UPCOMING — Jan 1-15 pattern confirmed for 2026-27 cycle",
+  "window_open": "2026-08-01",
+  "window_close": "2027-01-01 to 2027-01-15 (most selective schools; some Feb-Mar 2027)",
+  "fee": "$50-$100 per college",
+  "exam": "SAT/ACT (test-optional varies) + English proficiency",
+  "exam_date": "",
+  "eligibility": "Class 12 students; decisions Mar-Apr 2027, reply by 1 May 2027",
+  "fields": [
+   "All"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "MIT First-Year Admissions 2026-27 (Fall 2027)",
+  "org": "MIT Admissions (own portal, not Common App)",
+  "stage": "ug",
+  "region": "us",
+  "url": "https://mitadmissions.org/apply/firstyear/deadlines-requirements/",
+  "status_note": "UPCOMING — standing published deadlines (EA Nov 1, RA early Jan) confirmed on MIT site",
+  "window_open": "2026-08-01",
+  "window_close": "EA: 2026-11-01; Regular Action: ~2027-01-05",
+  "fee": "$75 (waivers available)",
+  "exam": "SAT or ACT required (testing requirement reinstated)",
+  "exam_date": "",
+  "eligibility": "Class 12 any board; EA non-restrictive for international applicants",
+  "fields": [
+   "Engineering",
+   "Science",
+   "All"
+  ],
+  "mode": "online",
+  "seats_or_intake": "~1,100 first-year seats; EA decisions mid-Dec 2026, RA mid-Mar 2027"
+ },
+ {
+  "name": "Stanford Undergraduate Admissions 2026-27 (Fall 2027)",
+  "org": "Stanford University (via Common App)",
+  "stage": "ug",
+  "region": "us",
+  "url": "https://admission.stanford.edu/apply/first-year/",
+  "status_note": "UPCOMING — REA Nov 1 / RD early Jan standing pattern confirmed on Stanford site",
+  "window_open": "2026-08-01",
+  "window_close": "REA: 2026-11-01; RD: ~2027-01-05",
+  "fee": "$90 (waivers available)",
+  "exam": "SAT/ACT required from Fall 2026 entry onwards; REA restricts other private early apps",
+  "exam_date": "",
+  "eligibility": "Class 12 any board; REA non-binding but restrictive",
+  "fields": [
+   "All"
+  ],
+  "mode": "online",
+  "seats_or_intake": "~1,700 first-year seats; REA decisions mid-Dec 2026"
+ },
+ {
+  "name": "University of California application (Fall 2027)",
+  "org": "University of California (systemwide, 9 campuses)",
+  "stage": "ug",
+  "region": "us",
+  "url": "https://admission.universityofcalifornia.edu/how-to-apply/",
+  "status_note": "UPCOMING — opens 1 Aug 2026, filing 1 Oct – 30 Nov 2026, confirmed on UC admissions site",
+  "window_open": "2026-08-01 (filing period 2026-10-01 onwards)",
+  "window_close": "2026-11-30",
+  "fee": "$95 per campus (international applicants)",
+  "exam": "none (UC is test-free; SAT/ACT not considered)",
+  "exam_date": "",
+  "eligibility": "Class 12 any board; one application covers up to 9 UC campuses",
+  "fields": [
+   "All"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "UCAS 2027 entry — main cycle (UK undergrad, autumn 2027)",
+  "org": "UCAS",
+  "stage": "ug",
+  "region": "uk",
+  "url": "https://www.ucas.com/applying/applying-to-university/dates-and-deadlines-for-uni-applications",
+  "status_note": "UPCOMING — submissions from 1 Sep 2026; 13 Jan 2027 equal-consideration deadline confirmed on UCAS",
+  "window_open": "2026-09-01 (submissions; Hub registration already possible)",
+  "window_close": "2027-01-13 18:00 UK time (equal consideration)",
+  "fee": "£34.50 (2027 cycle, up to 5 choices — confirmed on UCAS FAQ)",
+  "exam": "none centrally; course-specific tests (UCAT, LNAT, etc.) for some subjects",
+  "exam_date": "",
+  "eligibility": "Class 12 (CBSE/ISC/IB/A-levels) + English proficiency; max 5 choices",
+  "fields": [
+   "All"
+  ],
+  "mode": "online",
+  "seats_or_intake": "All UK universities; UCAS Extra opens 25 Feb 2027"
+ },
+ {
+  "name": "UCAS 2027 early deadline — Oxford, Cambridge, Medicine, Dentistry, Vet",
+  "org": "UCAS / University of Oxford / University of Cambridge",
+  "stage": "ug",
+  "region": "uk",
+  "url": "https://www.ucas.com/applying/applying-to-university/dates-and-deadlines-for-uni-applications",
+  "status_note": "UPCOMING — 15 Oct 2026 18:00 UK deadline confirmed for 2027 entry",
+  "window_open": "2026-09-01",
+  "window_close": "2026-10-15 18:00 UK time",
+  "fee": "£34.50 (same single UCAS fee); Cambridge also requires My Cambridge Application form",
+  "exam": "Course admissions tests (UCAT for medicine, TSA/MAT/ESAT etc. for Oxbridge) + interviews",
+  "exam_date": "Admissions tests mostly Oct 2026; interviews Dec 2026",
+  "eligibility": "Class 12 with very high predicted scores; can apply to Oxford OR Cambridge, not both",
+  "fields": [
+   "All",
+   "Medicine"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "OUAC 2027 (Ontario, Canada — Fall 2027 undergrad)",
+  "org": "Ontario Universities' Application Centre",
+  "stage": "ug",
+  "region": "global",
+  "url": "https://www.ouac.on.ca/guide/undergrad-dates/",
+  "status_note": "UPCOMING — 15 Jan 2027 equal-consideration date confirmed in OUAC 2026-27 schedule of dates",
+  "window_open": "expected late September 2026",
+  "window_close": "2027-01-15 (equal consideration; 105 deadlines for internationals vary by university)",
+  "fee": "CAD $156 base (3 choices) + CAD $50 per extra choice",
+  "exam": "none; grades-based + English proficiency",
+  "exam_date": "",
+  "eligibility": "Indian students apply via OUAC 105 (non-Ontario/international applicants)",
+  "fields": [
+   "All"
+  ],
+  "mode": "online",
+  "seats_or_intake": "~20 Ontario universities incl. Toronto, Waterloo, McMaster; offers by 28 May 2027"
+ },
+ {
+  "name": "Canada — non-Ontario direct applications (Fall 2027: UBC, McGill, Alberta)",
+  "org": "Individual Canadian universities",
+  "stage": "ug",
+  "region": "global",
+  "url": "https://you.ubc.ca/applying-ubc/how-to-apply/",
+  "status_note": "ESTIMATED — portals typically open Sep-Oct 2026 and close 15 Jan – 1 Feb 2027 for internationals",
+  "window_open": "expected September 2026",
+  "window_close": "expected 15 January – 1 February 2027 (UBC ~Jan 15, McGill ~Feb 1)",
+  "fee": "CAD $120-$160 per university",
+  "exam": "none; board marks + English proficiency",
+  "exam_date": "",
+  "eligibility": "Class 12 any board; apply direct on each university's portal",
+  "fields": [
+   "All"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "Germany uni-assist — Summer Semester 2027 (Spring intake, Mar/Apr 2027 start)",
+  "org": "uni-assist e.V.",
+  "stage": "pg",
+  "region": "europe",
+  "url": "https://www.uni-assist.de/en/how-to-apply/plan-your-application/deadlines-processing-time/",
+  "status_note": "ESTIMATED — standard 15 Jan pattern confirmed on uni-assist site, but each university sets its own deadline",
+  "window_open": "expected December 2026",
+  "window_close": "2027-01-15 (typical; verify per university — many master's close earlier)",
+  "fee": "€75 first application + €30 each additional",
+  "exam": "none centrally; IELTS/TOEFL or German (TestDaF/DSH) per course; GRE for some MS",
+  "exam_date": "",
+  "eligibility": "Bachelor's degree holders (for MS); UG needs Studienkolleg or 1 yr Indian university/JEE-Adv route",
+  "fields": [
+   "All",
+   "Engineering"
+  ],
+  "mode": "online",
+  "seats_or_intake": "Fewer courses than winter intake; mostly master's programs"
+ },
+ {
+  "name": "Germany uni-assist — Winter Semester 2027/28 (Fall 2027, Oct start)",
+  "org": "uni-assist e.V.",
+  "stage": "pg",
+  "region": "europe",
+  "url": "https://www.uni-assist.de/en/how-to-apply/plan-your-application/deadlines-processing-time/",
+  "status_note": "ESTIMATED — standard 15 Jul pattern confirmed on uni-assist site; many DAAD/TU master's close much earlier (Dec 2026 – Mar 2027)",
+  "window_open": "expected May 2027 (early-deadline courses from Dec 2026)",
+  "window_close": "2027-07-15 (typical; TU9 master's often 31 Mar or 31 May 2027)",
+  "fee": "€75 first application + €30 each additional",
+  "exam": "none centrally; IELTS/TOEFL or TestDaF/DSH; GRE recommended for some TU9 MS",
+  "exam_date": "",
+  "eligibility": "Main intake for Indian MS aspirants; bachelor's degree required; APS certificate mandatory for Indian applicants",
+  "fields": [
+   "All",
+   "Engineering"
+  ],
+  "mode": "online",
+  "seats_or_intake": "Main German intake; most English-taught MS programs"
+ },
+ {
+  "name": "Australia Semester 1 2027 (February intake)",
+  "org": "Individual Australian universities (Go8: Melbourne, Sydney, UNSW, Monash...)",
+  "stage": "ug",
+  "region": "global",
+  "url": "https://study.unimelb.edu.au/how-to-apply/undergraduate-study/international-applications/entry-requirements/important-dates",
+  "status_note": "VERIFIED-OPEN — international applications accepted now (rolling); Melbourne UG closes 31 Oct 2026, Sydney ~1 Dec 2026",
+  "window_open": "open now (rolling; most windows opened ~Aug 2026 or earlier)",
+  "window_close": "2026-10-31 (Melbourne UG) to December 2026; competitive courses close earlier",
+  "fee": "AUD $100-$150 per university (often waived via agents/events)",
+  "exam": "none; Class 12 marks + IELTS/TOEFL/PTE",
+  "exam_date": "",
+  "eligibility": "Class 12 with board-specific cutoffs; CBSE/ISC accepted directly",
+  "fields": [
+   "All"
+  ],
+  "mode": "online",
+  "seats_or_intake": "Main Australian intake; apply by Sep-Oct 2026 for competitive courses"
+ },
+ {
+  "name": "Netherlands Studielink 2027-28 (Fall 2027 bachelor's)",
+  "org": "Studielink (national portal) + individual Dutch universities",
+  "stage": "ug",
+  "region": "europe",
+  "url": "https://www.studyinnl.org/plan-your-stay/how-to-apply",
+  "status_note": "UPCOMING — 15 Jan numerus fixus deadline is fixed nationally; portal for 2027-28 expected to open 1 Oct 2026",
+  "window_open": "expected 2026-10-01",
+  "window_close": "2027-01-15 23:59 CET (numerus fixus, max 2 programmes); 2027-05-01 (non-fixus)",
+  "fee": "Free (Studielink); ~€100 handling fee at some universities for non-EU applicants",
+  "exam": "none centrally; selection tests for numerus fixus courses (medicine, psychology, AI...)",
+  "exam_date": "Selection procedures 15 Jan – 15 Apr 2027",
+  "eligibility": "Class 12 (CBSE/ISC often needs foundation year for some unis; IB/A-levels direct)",
+  "fields": [
+   "All"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "NUS undergraduate AY2027/28 (Aug 2027 intake) — international qualifications",
+  "org": "National University of Singapore",
+  "stage": "ug",
+  "region": "global",
+  "url": "https://www.nus.edu.sg/oam/admissions/important-dates",
+  "status_note": "ESTIMATED — AY2026/27 window ran 3 Dec 2025 – 23 Feb 2026; AY2027/28 dates not yet published",
+  "window_open": "expected early December 2026",
+  "window_close": "expected late February 2027",
+  "fee": "S$20 (international students with international qualifications, incl. GST)",
+  "exam": "none; CBSE/ISC Class 12 predicted/actual + strong JEE-Adv/SAT strengthens file",
+  "exam_date": "",
+  "eligibility": "Class 12 CBSE/ISC/IB; outcomes by ~3rd week of May 2027",
+  "fields": [
+   "All"
+  ],
+  "mode": "online",
+  "seats_or_intake": "~7,000 total places; international quota limited"
+ },
+ {
+  "name": "NTU undergraduate AY2027/28 (Aug 2027 intake) — India Standard 12",
+  "org": "Nanyang Technological University, Singapore",
+  "stage": "ug",
+  "region": "global",
+  "url": "https://www.ntu.edu.sg/admissions/undergraduate/admission-guide/international-qualifications/india-standard-12",
+  "status_note": "ESTIMATED — window typically Nov/Dec 2026 – Feb/Mar 2027, following NUS pattern; 2027 dates not yet published",
+  "window_open": "expected November-December 2026",
+  "window_close": "expected February-March 2027",
+  "fee": "~S$30 (verify on NTU portal; not confirmed in search)",
+  "exam": "none; Class 12 board marks + English proficiency (IELTS/TOEFL/SAT-EBRW)",
+  "exam_date": "",
+  "eligibility": "Class 12 CBSE/ISC/state boards with strong aggregates; JEE-Main/Adv scores help",
+  "fields": [
+   "All",
+   "Engineering"
+  ],
+  "mode": "online"
+ },
+ {
+  "name": "HKU International Admissions Scheme 2027 entry (Sep 2027)",
+  "org": "The University of Hong Kong",
+  "stage": "ug",
+  "region": "global",
+  "url": "https://admissions.hku.hk/apply/international-qualifications",
+  "status_note": "UPCOMING — HKU FAQ confirms 2027-entry cycle opens late September 2026; main-round deadline estimated from pattern",
+  "window_open": "expected late September 2026",
+  "window_close": "expected late November 2026 (first/main round; then rolling to ~Aug 2027)",
+  "fee": "HK$600 (per HKU FAQ)",
+  "exam": "none; Class 12 predicted grades + interview; IELTS/TOEFL",
+  "exam_date": "",
+  "eligibility": "Class 12 CBSE/ISC/IB/A-levels; first-round offers from late Dec 2026; HKUST/CUHK run similar Oct 2026 – mid-2027 rolling cycles",
+  "fields": [
+   "All"
+  ],
+  "mode": "online",
+  "seats_or_intake": "Rolling offers; first round drives most international offers"
+ },
+ {
+  "name": "US Graduate School Fall 2027 (MS/PhD, incl. CS/Engineering)",
+  "org": "Individual US universities (Stanford CS, Virginia Tech, UCSD...)",
+  "stage": "pg",
+  "region": "us",
+  "url": "https://www.cs.stanford.edu/admissions-graduate-application-deadlines",
+  "status_note": "UPCOMING — Virginia Tech CS confirms 1 Dec 2026 deadline; top programs cluster 1-15 Dec 2026",
+  "window_open": "expected September 2026 (most portals)",
+  "window_close": "2026-12-01 to 2026-12-15 (top CS/engineering; others through Jan-Apr 2027)",
+  "fee": "$75-$125 per school",
+  "exam": "GRE (optional at many CS programs) + TOEFL/IELTS mandatory",
+  "exam_date": "",
+  "eligibility": "4-yr bachelor's (B.Tech/B.E.) or 3-yr degree accepted case-by-case; decisions by Mar 2027",
+  "fields": [
+   "Engineering",
+   "Computer Science",
+   "All"
+  ],
+  "mode": "online",
+  "seats_or_intake": "Largest Indian outbound cohort; PhD deadlines mostly 1-15 Dec 2026"
+ },
+ {
+  "name": "SAT 2026-27 administrations (supporting cycle)",
+  "org": "College Board",
+  "stage": "ug",
+  "region": "global",
+  "url": "https://satsuite.collegeboard.org/sat/dates-deadlines",
+  "status_note": "VERIFIED-OPEN — registration open now for Aug 22, 2026 sitting (reg. deadline Aug 7, 2026)",
+  "window_open": "open now",
+  "window_close": "2026-08-07 (for Aug 22 test); rolling deadlines ~2 weeks before each date",
+  "fee": "US$111 international (US$68 base + US$43 regional surcharge)",
+  "exam": "SAT (Digital)",
+  "exam_date": "2026: Aug 22, Sep 12, Oct 3, Nov 7, Dec 5; 2027: Mar 6, May 1, Jun 5",
+  "eligibility": "Any student; Oct/Nov 2026 sittings are last safe dates for US EA/ED, Dec 5 for RD",
+  "fields": [
+   "All"
+  ],
+  "mode": "offline",
+  "seats_or_intake": "Digital SAT at centres across India"
+ },
+ {
+  "name": "ACT 2026-27 administrations (supporting cycle)",
+  "org": "ACT Inc.",
+  "stage": "ug",
+  "region": "global",
+  "url": "https://www.act.org/content/act/en/products-and-services/the-act/registration/test-dates.html",
+  "status_note": "UPCOMING — 2026-27 dates announced (Sep 19 2026 first); registration for fall sittings opens ~late July 2026",
+  "window_open": "expected late July 2026 (registration)",
+  "window_close": "~5 weeks before each test date",
+  "fee": "~US$188.50 with Writing + international surcharge (all-in ~US$210-240 in India)",
+  "exam": "ACT (computer-based internationally)",
+  "exam_date": "2026: Sep 19, Oct 17, Dec 12; 2027: Feb 27, Apr 10, Jun 12, Jul 10",
+  "eligibility": "Any student; alternative to SAT, accepted by all US colleges",
+  "fields": [
+   "All"
+  ],
+  "mode": "offline"
+ },
+ {
+  "name": "IELTS (Academic) — rolling registration India (supporting cycle)",
+  "org": "IDP IELTS India",
+  "stage": "ug",
+  "region": "india",
+  "url": "https://ielts.idp.com/india",
+  "status_note": "VERIFIED-OPEN — multiple test dates every month, computer and paper, year-round",
+  "window_open": "open now (rolling)",
+  "window_close": "book 3-4 days ahead (computer) / ~2 weeks (paper)",
+  "fee": "₹19,000 (from 1 Apr 2026; was ₹18,000)",
+  "exam": "IELTS Academic",
+  "exam_date": "48+ dates/year; results in 1-5 days (computer)",
+  "eligibility": "Anyone; needed for UK/Australia/Canada/NL/Germany apps — take by Oct-Nov 2026 for Jan 2027 deadlines",
+  "fields": [
+   "All"
+  ],
+  "mode": "hybrid"
+ },
+ {
+  "name": "TOEFL iBT — rolling registration India (supporting cycle)",
+  "org": "ETS India",
+  "stage": "ug",
+  "region": "india",
+  "url": "https://www.in.ets.org/toefl/test-takers/ibt/register/fees.html",
+  "status_note": "VERIFIED-OPEN — testing year-round at centres and Home Edition",
+  "window_open": "open now (rolling)",
+  "window_close": "book up to 2 days before test date",
+  "fee": "~₹18,000 (₹15,254 + 18% GST)",
+  "exam": "TOEFL iBT",
+  "exam_date": "Multiple dates weekly; scores in 4-8 days",
+  "eligibility": "Anyone; preferred for US applications — take by Nov 2026 for Dec 2026 grad deadlines",
+  "fields": [
+   "All"
+  ],
+  "mode": "hybrid"
+ },
+ {
+  "name": "GRE General Test — rolling registration India (supporting cycle)",
+  "org": "ETS",
+  "stage": "pg",
+  "region": "india",
+  "url": "https://www.ets.org/gre/test-takers/general-test/register/fees.html",
+  "status_note": "VERIFIED-OPEN — year-round testing; note global fee rises to US$249 from 1 Aug 2026",
+  "window_open": "open now (rolling)",
+  "window_close": "book any time; take by Oct-Nov 2026 for Fall 2027 US grad deadlines",
+  "fee": "~₹22,500 (India; global fee US$220, rising to US$249 on 1 Aug 2026)",
+  "exam": "GRE General Test (~2 hr format)",
+  "exam_date": "Year-round at centres + at-home; scores in 8-10 days",
+  "eligibility": "Anyone; optional at many CS MS programs but required/recommended for PhD and top MS",
+  "fields": [
+   "All"
+  ],
+  "mode": "hybrid"
+ },
+ {
+  "name": "JNVST 2027 Class 6 (Jawahar Navodaya Vidyalaya Selection Test)",
+  "org": "Navodaya Vidyalaya Samiti (NVS)",
+  "stage": "school",
+  "region": "india",
+  "url": "https://cbseitms.rcil.gov.in/nvs",
+  "status_note": "VERIFIED-OPEN — registration opened 2026-07-06 and closes 2026-07-31; confirmed via NVS notification coverage (careers360, Business Standard)",
+  "window_open": "2026-07-06",
+  "window_close": "2026-07-31",
+  "exam": "JNVST 2027",
+  "exam_date": "2026-11-28 (summer-bound and winter-bound schools); result expected March 2027",
+  "fee": "Free",
+  "eligibility": "Class 5 students in the district's govt/recognised school, born 1 May 2015 – 31 Jul 2017; rural quota 75%",
+  "mode": "online",
+  "fields": [
+   "All"
+  ],
+  "seats_or_intake": "~80 seats per JNV, 650+ JNVs (~50,000 seats)"
+ },
+ {
+  "name": "JNVST 2027 Class 9 & 11 Lateral Entry (session 2027-28)",
+  "org": "Navodaya Vidyalaya Samiti (NVS)",
+  "stage": "school",
+  "region": "india",
+  "url": "https://navodaya.gov.in/",
+  "status_note": "ESTIMATED — 2027-28 notification not yet out; dates projected from 2026-27 cycle (window Sept–Oct 2026, extended to Oct 7 last year)",
+  "window_open": "expected September 2026",
+  "window_close": "expected October 2026",
+  "exam": "JNVST Class 9/11 lateral entry test",
+  "exam_date": "expected February 2027",
+  "fee": "Free",
+  "eligibility": "Class 8 pass (for 9) / Class 10 pass (for 11) from recognised school in the district; class 9 DOB 1 May 2012 – 31 Jul 2014",
+  "mode": "online",
+  "fields": [
+   "All"
+  ],
+  "seats_or_intake": "Against vacant seats per JNV"
+ },
+ {
+  "name": "AISSEE 2027 (All India Sainik School Entrance Exam, Class 6 & 9)",
+  "org": "National Testing Agency (NTA) / Sainik Schools Society, MoD",
+  "stage": "school",
+  "region": "india",
+  "url": "https://exams.nta.nic.in/sainik-school-society/",
+  "status_note": "ESTIMATED — 2027 notification not released as of mid-July 2026; projected from AISSEE 2026 pattern (registration 10 Oct – 9 Nov 2025, exam 18 Jan 2026)",
+  "window_open": "expected October 2026",
+  "window_close": "expected November 2026",
+  "exam": "AISSEE (OMR, offline)",
+  "exam_date": "expected January 2027 (AISSEE 2026 was held 18 Jan 2026); counselling ~June 2027",
+  "fee": "₹800 Gen/OBC/Defence, ₹650 SC/ST (2026 fees)",
+  "eligibility": "Class 6: age 10-12; Class 9: class 8 pass, age 13-15; girls eligible for both",
+  "mode": "offline",
+  "fields": [
+   "All"
+  ],
+  "seats_or_intake": "33 old + ~40 new-approved Sainik Schools"
+ },
+ {
+  "name": "Kendriya Vidyalaya Balvatika & Class 1 Admission 2027-28",
+  "org": "Kendriya Vidyalaya Sangathan (KVS)",
+  "stage": "school",
+  "region": "india",
+  "url": "https://admission.kvs.gov.in/",
+  "status_note": "ESTIMATED — 2026-27 window (20 Mar – 2 Apr 2026, lottery 9 Apr) is closed; next cycle projected from that pattern. Class 2+ offline admissions run ~April each year against vacancies",
+  "window_open": "expected March 2027",
+  "window_close": "expected April 2027",
+  "exam": "none — lottery with priority categories (Govt/PSU transferable employees first)",
+  "exam_date": "lottery expected April 2027",
+  "fee": "Free (registration)",
+  "eligibility": "Class 1: child 6+ years as of 31 March of admission year; priority to central govt employees' wards",
+  "mode": "online",
+  "fields": [
+   "All"
+  ],
+  "seats_or_intake": "~1,250 KVs, 32-40 seats per Class 1 section"
+ },
+ {
+  "name": "RTE 25% Free-Seat Admissions 2027-28 (state lotteries, entry-level)",
+  "org": "State education departments under RTE Act s.12(1)(c)",
+  "stage": "school",
+  "region": "india",
+  "url": "https://rte25admission.maharashtra.gov.in/",
+  "status_note": "ESTIMATED — annual state-wise pattern verified from 2026-27: UP phase 1 opened 2 Feb, Rajasthan 20 Feb – 10 Mar, Maharashtra closed 31 Mar, Karnataka 21 Apr – 17 May, Tamil Nadu from 20 Apr; 2027-28 windows expected on same calendar. No single national portal — apply on your state's official RTE portal (URL shown is Maharashtra's official portal as an example; corrected during audit from an unofficial aggregator link)",
+  "window_open": "expected December 2026 (UP earliest) to April 2027 (southern states)",
+  "window_close": "expected March-May 2027, state-dependent",
+  "exam": "none — computerised lottery",
+  "exam_date": "lotteries expected February-May 2027",
+  "fee": "Free",
+  "eligibility": "EWS/disadvantaged-group children at entry level (nursery/LKG/Class 1, age per state norms); income certificate required",
+  "mode": "online",
+  "fields": [
+   "All"
+  ],
+  "seats_or_intake": "25% of entry-level seats in private unaided schools"
+ },
+ {
+  "name": "NIOS Stream 1 Block 1 Admission 2026-27 (Class 10 & 12, April 2027 exams)",
+  "org": "National Institute of Open Schooling (NIOS), MoE",
+  "stage": "school",
+  "region": "india",
+  "url": "https://sdmis.nios.ac.in/",
+  "status_note": "VERIFIED-OPEN — Block 1 window 16 Mar 2026 to 31 Jul 2026 without late fee; with ₹910 late fee until 15 Sep 2026. Block 2 (for Oct/Nov 2027 exams) opens 16 Sep 2026",
+  "window_open": "2026-03-16",
+  "window_close": "2026-07-31",
+  "exam": "none (open-schooling enrolment; public exams April/May 2027)",
+  "exam_date": "April-May 2027 public examination",
+  "fee": "Secondary ₹2,340 Gen / ₹1,890 female / ₹1,560 SC-ST; Sr Secondary ₹2,600 / ₹2,150 / ₹1,690 (5 subjects, + ₹70 portal fee; exam fee ₹300/theory subject separate)",
+  "eligibility": "Class 10: 14+ years with self-certified readiness; Class 12: 15+ with class 10 pass",
+  "mode": "online",
+  "fields": [
+   "All"
+  ],
+  "seats_or_intake": "Open enrolment, no seat cap"
+ },
+ {
+  "name": "IOQM 2026 (Indian Olympiad Qualifier in Mathematics — gateway to INMO/IMO)",
+  "org": "MTA(I) with HBCSE",
+  "stage": "school",
+  "region": "india",
+  "url": "https://ioqm.mtai.org.in/",
+  "status_note": "VERIFIED-OPEN — individual online registration 29 Jun – 25 Jul 2026 (school-centre enrolment 1 Jun – 25 Jul); exam 6 Sep 2026, admit card 15 Aug 2026. Closes in ~6 days",
+  "window_open": "2026-06-01",
+  "window_close": "2026-07-25",
+  "exam": "IOQM (stage 1 of maths olympiad chain: IOQM → INMO → IMOTC → IMO)",
+  "exam_date": "2026-09-06",
+  "fee": "₹300 (₹180 for KV/JNV students)",
+  "eligibility": "Classes 8-12, born 1 Aug 2007 – 31 Jul 2014, Indian school board",
+  "mode": "offline",
+  "fields": [
+   "Mathematics"
+  ],
+  "seats_or_intake": "Open; top ~600 qualify for INMO"
+ },
+ {
+  "name": "IAPT National Standard Examinations 2026 (NSEP/NSEC/NSEB/NSEA/NSEJS — gateway to IPhO/IChO/IBO/IOAA/IJSO)",
+  "org": "IAPT with HBCSE",
+  "stage": "school",
+  "region": "india",
+  "url": "https://www.iapt.org.in/",
+  "status_note": "UPCOMING — schedule announced: centre registration 1-20 Aug 2026, student enrolment 21 Aug – 14 Sep 2026; exams 21-23 Nov 2026 (NSEA 21st, NSEP & NSEJS 22nd, NSEC 23rd)",
+  "window_open": "2026-08-21",
+  "window_close": "2026-09-14",
+  "exam": "NSE in Physics/Chemistry/Biology/Astronomy/Junior Science (stage 1 → INO → OCSC → international olympiads)",
+  "exam_date": "2026-11-21 to 2026-11-23",
+  "fee": "₹300 per subject",
+  "eligibility": "Class 12 or below (NSEJS: class 10 or below, born on/after 1 Jan 2012 typically); Indian nationals in Indian schools",
+  "mode": "offline",
+  "fields": [
+   "Physics",
+   "Chemistry",
+   "Biology",
+   "Astronomy",
+   "Junior Science"
+  ],
+  "seats_or_intake": "Open; ~300 per subject advance to stage 2 (INO)"
+ },
+ {
+  "name": "SOF Olympiads 2026-27 (NSO, IMO, IEO, NCO, IGKO etc.)",
+  "org": "Science Olympiad Foundation (SOF)",
+  "stage": "school",
+  "region": "india",
+  "url": "https://sofworld.org/exam-schedule",
+  "status_note": "VERIFIED-OPEN — 2026-27 exam schedule published and school registrations ongoing (rolling, ideally 30 days before chosen date; min 15 days). IMO dates 23 Oct / 26 Nov / 10 Dec 2026; NSO 30 Oct / 19 Nov / 3 Dec 2026. Note: private olympiad — does NOT feed the HBCSE/IMO national team pipeline",
+  "window_open": "rolling (open now via schools)",
+  "window_close": "rolling — ~30 days before chosen exam date (Oct-Dec 2026)",
+  "exam": "NSO / IMO / IEO / NCO / IGKO / ICO etc.",
+  "exam_date": "October-December 2026 (three date options per exam)",
+  "fee": "₹170 per student per olympiad (+ up to ₹30 school charge)",
+  "eligibility": "Classes 1-12, registration only through the school (min 10 students per school)",
+  "mode": "offline",
+  "fields": [
+   "Science",
+   "Mathematics",
+   "English",
+   "Computers",
+   "GK"
+  ],
+  "seats_or_intake": "Open"
+ },
+ {
+  "name": "INSPIRE-SHE Scholarship 2026 (KVPY-adjacent DST scholarship, ₹80,000/yr for BSc/BS natural sciences)",
+  "org": "Department of Science & Technology (DST)",
+  "stage": "ug",
+  "region": "india",
+  "url": "https://online-inspire.gov.in/",
+  "status_note": "ESTIMATED — 2026 call not confirmed in searches as of 19 Jul 2026; recent cycles open around Aug-Oct and close ~31 December. Note: KVPY itself was subsumed into INSPIRE-SHE from 2022; there is no separate KVPY exam",
+  "window_open": "expected August 2026",
+  "window_close": "expected December 2026 (recent cycles closed 31 Dec)",
+  "exam": "none — merit-based (board top-1% or JEE Adv/NEET rank cutoff)",
+  "exam_date": "",
+  "fee": "Free",
+  "eligibility": "Top 1% in class 12 board (2026) or JEE Advanced/NEET top ~10,000, enrolled in BSc/BS/Int-MSc natural sciences, age 17-22",
+  "fields": [
+   "Natural Sciences"
+  ],
+  "mode": "online",
+  "seats_or_intake": "~12,000 scholarships/year"
+ },
+ {
+  "name": "NTSE (National Talent Search Exam) — suspended, revival announced",
+  "org": "NCERT / Ministry of Education",
+  "stage": "school",
+  "region": "india",
+  "url": "https://ncert.nic.in/",
+  "status_note": "ESTIMATED — NTSE remains suspended (since 2023-24, no stage-1 held); MoE has announced revival in an expanded format alongside the DHRUV gifted-students initiative, but no 2026-27 notification exists as of 19 Jul 2026. Track NCERT/state SCERT notices; do not pay third-party 'NTSE 2027 form' sites (URL corrected during audit to NCERT's official domain)",
+  "window_open": "expected — no date announced",
+  "window_close": "",
+  "exam": "NTSE stage 1 (state) + stage 2 (national), if revived",
+  "exam_date": "",
+  "fee": "Was free/nominal (state-set) in last held cycle",
+  "eligibility": "Class 10 students (historical criteria; new format unannounced)",
+  "mode": "offline",
+  "fields": [
+   "All"
+  ],
+  "seats_or_intake": "Was ~2,000 scholarships"
+ },
+ {
+  "name": "Motilal Nehru School of Sports (MNSS) Rai admission 2027-28 (Classes 5-11, sports residential school)",
+  "org": "MNSS Rai, Sonipat (Govt of Haryana)",
+  "stage": "school",
+  "region": "india",
+  "url": "https://www.mnssrai.com/",
+  "status_note": "ESTIMATED — 2027-28 notification not yet out; 2026-27 pattern: online forms closed 21 Dec 2025 (late fee ₹500 till 31 Dec), PESAT + written test Feb 2026. Expect the same calendar one year on",
+  "window_open": "expected November 2026",
+  "window_close": "expected December 2026",
+  "exam": "PESAT (Physical Efficiency & Sports Aptitude Test) + written test (Hindi/English/Maths/GK)",
+  "exam_date": "expected February 2027",
+  "fee": "application fee per prospectus (late fee was ₹500 in 2026-27)",
+  "eligibility": "Boys and girls seeking classes 5-11, age per class norms, sports aptitude mandatory",
+  "mode": "hybrid",
+  "fields": [
+   "Sports"
+  ],
+  "seats_or_intake": "Limited per class/sport discipline"
+ },
+ {
+  "name": "EMRS Class 6 Entrance (Eklavya Model Residential Schools) 2027-28",
+  "org": "NESTS, Ministry of Tribal Affairs / state EMRS societies",
+  "stage": "school",
+  "region": "india",
+  "url": "https://nests.tribal.gov.in/",
+  "status_note": "ESTIMATED — 2027-28 cycle not announced; 2026-27 pattern (state-varying): applications ~10 Jan – 10 Feb 2026, selection test 1 Mar 2026 (Odisha 15 Feb). Expect Jan-Mar 2027 windows via state portals",
+  "window_open": "expected January 2027",
+  "window_close": "expected February 2027",
+  "exam": "EMRS Selection Test (state-conducted, JNVST-style)",
+  "exam_date": "expected February-March 2027",
+  "fee": "Free",
+  "eligibility": "ST students who passed/are in class 5, from blocks served by an EMRS",
+  "mode": "hybrid",
+  "fields": [
+   "All"
+  ],
+  "seats_or_intake": "~60 seats per school, 400+ functional EMRS"
+ },
+ {
+  "name": "Ashoka Young Scholars Programme (YSP) 2027 — summer programme, May-June 2027",
+  "org": "Ashoka University",
+  "stage": "school",
+  "region": "india",
+  "url": "https://www.ashoka.edu.in/ysp/",
+  "status_note": "ESTIMATED — 2027 applications not yet open; 2026 pattern: rolling applications from ~autumn 2025, need-based scholarship deadline 8 Mar 2026, editions 18-29 May and 1-12 Jun 2026. Expect rolling 2027 applications from ~October 2026",
+  "window_open": "expected October 2026 (rolling)",
+  "window_close": "rolling until seats fill (scholarship deadline expected March 2027)",
+  "exam": "profile-based",
+  "exam_date": "programme expected May-June 2027",
+  "fee": "₹1,000 application fee (2026); programme fee separate, need-based aid available",
+  "eligibility": "Students entering classes 9-12 at programme time (class 12 board-appeared also eligible)",
+  "mode": "online",
+  "fields": [
+   "Liberal Arts",
+   "Interdisciplinary"
+  ],
+  "seats_or_intake": "Limited, rolling — early applicants favoured"
+ },
+ {
+  "name": "Plaksha Young Technology Scholars (YTS+) 2027 — residential summer programme",
+  "org": "Plaksha University, Mohali",
+  "stage": "school",
+  "region": "india",
+  "url": "https://yts.plaksha.edu.in/",
+  "status_note": "ESTIMATED — 2027 application dates not published as of 19 Jul 2026; 2026 cycle was profile-based with rolling rounds opening ~winter. Expect applications from ~December 2026 for the June 2027 edition",
+  "window_open": "expected December 2026 (rolling rounds)",
+  "window_close": "expected April-May 2027",
+  "exam": "profile-based",
+  "exam_date": "programme expected June 2027 (two-week residential)",
+  "fee": "programme fee ₹1,05,000 + GST (2026, subsidised; scholarships available)",
+  "eligibility": "Students in grades 9-12 by the programme summer; no minimum marks",
+  "mode": "online",
+  "fields": [
+   "Engineering",
+   "Technology",
+   "Math",
+   "Biology",
+   "Economics"
+  ],
+  "seats_or_intake": "Limited cohort, selective"
+ }
+];

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "timshel",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8089", "--directory", "public"],
+      "port": 8089
+    },
+    {
+      "name": "timshel-dev",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["scripts/dev.mjs", "3001"],
+      "port": 3001
+    }
+  ]
+}

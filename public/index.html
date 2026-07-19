@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F2F1EC">
+<meta name="description" content="Scout finds fellowships, grants, hackathons, scholarships and internships — live from Unstop, Devpost and more, ranked and rotated for you.">
+<title>Scout — every opportunity worth your time</title>
+<link rel="icon" type="image/png" href="/favicon.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="manifest" href="/manifest.json">
+<link rel="preconnect" href="https://api.fontshare.com">
+<link rel="preconnect" href="https://cdn.fontshare.com" crossorigin>
+<link rel="preconnect" href="https://images.unsplash.com">
+<link rel="preconnect" href="https://d8it4huxumps7.cloudfront.net">
+<link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/scout.css?v=33">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+</head>
+<body>
+
+<!-- shader-gradient aurora (WebGL) with CSS fallback beneath -->
+<canvas class="shader-bg" id="shader-bg" aria-hidden="true"></canvas>
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+
+<div id="app">
+
+  <!-- ═══════════ ONBOARDING ═══════════ -->
+  <section class="screen on" id="onb">
+    <div class="onb-top">
+      <button class="icbtn" id="onb-back" onclick="onbPrev()" style="visibility:hidden" data-ic="arrow-left" aria-label="Back"></button>
+      <div class="onb-progress"><span id="onb-count">01 / 08</span><div class="onb-track"><i id="onb-fill"></i></div></div>
+      <button class="onb-skip" onclick="onbSkip()">Skip</button>
+    </div>
+    <div class="onb-body" id="onb-body"></div>
+    <div class="onb-foot">
+      <button class="pill pill-dark pill-lg" id="onb-next" onclick="onbNext()">Get started</button>
+    </div>
+  </section>
+
+  <!-- ═══════════ AUTH ═══════════ -->
+  <section class="screen" id="auth">
+    <div class="onb-top">
+      <button class="icbtn" onclick="authBack()" data-ic="arrow-left" aria-label="Back"></button>
+      <div style="flex:1"></div>
+    </div>
+    <div class="auth-wrap"><div class="auth-cap" id="auth-body"></div></div>
+  </section>
+
+  <!-- ═══════════ DASHBOARD — full-screen workspace for signed-in users ═══════════ -->
+  <section class="screen" id="dash">
+    <aside class="dash-nav" id="dash-nav"></aside>
+    <div class="dash-main">
+      <header class="dash-top">
+        <div class="dash-crumb" id="dash-crumb"></div>
+        <div class="dash-top-right">
+          <span class="sync-badge" id="dash-sync"></span>
+          <button class="icbtn" data-ic="arrow-left" id="dash-back" onclick="closeDash()" aria-label="Back to opportunities" title="Back to opportunities"></button>
+        </div>
+      </header>
+      <div class="dash-body" id="dash-body"></div>
+    </div>
+  </section>
+
+  <!-- ═══════════ MAIN APP ═══════════ -->
+  <section class="screen" id="main">
+
+    <header class="topbar">
+      <a class="brand" onclick="goV('home')">
+        <span class="brand-heart" id="brand-heart"></span>
+        <span class="brand-name">Scout</span>
+      </a>
+      <nav class="nav-center" id="nav-center" aria-label="Primary"></nav>
+      <div class="menu-drop" id="menu-drop" role="menu"></div>
+      <div class="top-right">
+        <button class="icbtn agent-orb" data-ic="orb" data-menu="agentmenu" onclick="goV('agent')" aria-label="Scout copilot" title="Scout copilot"></button>
+        <button class="icbtn" data-ic="bell" data-menu="alerts" onclick="signedIn()?openDash('notifications'):goV('scouted',{scrollTo:'#sc-risk'})" aria-label="Notifications"><span class="reddot"></span></button>
+        <button class="icbtn" data-ic="gear" data-menu="settings" onclick="goV('profile',{scrollTo:'#ps-prefs'})" aria-label="Settings"></button>
+        <button class="me" data-menu="account" onclick="goV('profile')">
+          <span class="me-av" id="me-av">S</span>
+          <span class="me-txt"><b id="me-name">Scout</b><i id="me-role">Member</i></span>
+        </button>
+      </div>
+    </header>
+
+    <div class="crumbrow">
+      <div class="crumbs"><span data-ic="folder" data-size="13"></span><span id="crumb-a">Workspaces</span><em>/</em><span data-ic="grid" data-size="13"></span><span id="crumb-b">For You</span></div>
+      <div class="crumb-actions">
+        <span class="sync-badge" id="sync-badge"></span>
+        <span class="feed-count" id="feed-count"></span>
+        <button class="icbtn" data-ic="shuffle" onclick="rotateFeed()" aria-label="Re-deal the feed" title="Re-deal the feed"></button>
+        <button class="icbtn" data-ic="bookmark" onclick="goV('saved')" aria-label="Saved"></button>
+      </div>
+    </div>
+
+    <main class="stage" id="stage">
+      <div class="view on" id="vw-home"></div>
+      <div class="view" id="vw-discover"></div>
+      <div class="view" id="vw-admissions"></div>
+      <div class="view" id="vw-scouted"></div>
+      <div class="view" id="vw-apply"></div>
+      <div class="view" id="vw-detail"></div>
+      <div class="view" id="vw-agent"></div>
+      <div class="view" id="vw-profile"></div>
+    </main>
+
+    <!-- floating global search dock -->
+    <div class="ai-dock" id="ai-dock">
+      <div class="dock-pop" id="dock-pop" aria-hidden="true"><div class="dock-pop-grab" id="dock-pop-grab"></div><div class="dock-pop-body" id="dock-pop-body"></div></div>
+      <form class="ai-bar search-bar" onsubmit="dockAsk(event)">
+        <button type="submit" class="ai-spark heart-spark" aria-label="Search"><svg class="heart-flat" width="21" height="21" viewBox="0 0 24 24" fill="#FF3F6C" aria-hidden="true"><path d="M12 21.2s-7.6-4.6-9.9-9.4C.7 8.3 2.4 4.8 5.8 4.3 8 3.95 10 5 12 7.3c2-2.3 4-3.35 6.2-3 3.4.5 5.1 4 3.7 7.5C19.6 16.6 12 21.2 12 21.2z"></path></svg></button>
+        <input id="ai-dock-input" placeholder="Search everything — try “remote design internships in Bangalore”" autocomplete="off">
+      </form>
+    </div>
+
+    <nav class="tabbar-m" id="tabbar-m" aria-label="Primary"></nav>
+    <div class="toast" id="toast" role="status"></div>
+  </section>
+</div>
+
+<script src="/scout.js?v=33" defer></script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });
+}
+</script>
+</body>
+</html>
