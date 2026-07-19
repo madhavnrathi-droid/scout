@@ -427,13 +427,22 @@ async function fetchMLH() {
   try {
     const ctl = new AbortController();
     const t = setTimeout(() => ctl.abort(), FETCH_TIMEOUT);
-    const r = await fetch('https://mlh.io/seasons/2026/events', { signal: ctl.signal, headers: { 'user-agent': UA } });
+    // MLH rolls its season over mid-year. A hardcoded season keeps returning 200
+    // with a perfectly parseable page and zero upcoming events — silently dead.
+    // Try the current hackathon season first, then the previous one.
+    const yr = new Date().getUTCFullYear();
+    let events = [], usedSeason = null;
+    for (const season of [yr + 1, yr]) {
+      const rr = await fetch(`https://mlh.io/seasons/${season}/events`, { signal: ctl.signal, headers: { 'user-agent': UA } });
+      if (!rr.ok) continue;
+      const html = await rr.text();
+      const m = html.match(/<script data-page="app" type="application\/json">(.*?)<\/script>/s);
+      if (!m) continue;
+      const up = JSON.parse(m[1])?.props?.upcomingEvents || [];
+      if (up.length) { events = up; usedSeason = season; break; }
+    }
     clearTimeout(t);
-    if (!r.ok) return [];
-    const html = await r.text();
-    const m = html.match(/<script data-page="app" type="application\/json">(.*?)<\/script>/s);
-    if (!m) return [];
-    const events = JSON.parse(m[1])?.props?.upcomingEvents || [];
+    if (!events.length) return [];
     return events.map((e) => ({
       id: 'mlh-' + e.id,
       title: e.name,
@@ -459,7 +468,7 @@ async function fetchMLH() {
       source: 'mlh.io',
       source_url: e.websiteUrl || ('https://mlh.io' + (e.url || '')),
       display_url: 'mlh.io',
-      description: `${e.name} — official MLH ${e.formatType === 'digital' ? 'digital' : 'in-person'} hackathon, ${e.dateRange || ''}${e.location ? ' · ' + e.location : ''}. Part of the MLH 2026 season.`,
+      description: `${e.name} — official MLH ${e.formatType === 'digital' ? 'digital' : 'in-person'} hackathon, ${e.dateRange || ''}${e.location ? ' · ' + e.location : ''}. Part of the MLH ${usedSeason} season.`,
       eligibility: 'Students and early-career hackers worldwide.',
       updated_at: null,
     }));

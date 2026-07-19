@@ -626,8 +626,11 @@ async function enterApp() {
   av.textContent = initial;
   av.style.background = PASTELS[initial.charCodeAt(0) % PASTELS.length];
   av.style.color = 'var(--ink)';
-  document.getElementById('me-name').textContent = nm.split(' ')[0];
+  const first = nm.split(' ')[0];
+  document.getElementById('me-name').textContent = `${first}${/s$/i.test(first) ? "'" : "'s"} Dashboard`;
   document.getElementById('me-role').textContent = ((ROLES.find((r) => r.v === (S.profile && S.profile.role)) || {}).t || 'Member').split(' or ')[0];
+  const meBtn = document.querySelector('.topbar .me');
+  if (meBtn) meBtn.setAttribute('aria-label', `${first}${/s$/i.test(first) ? "'" : "'s"} dashboard`);
   renderNav();
   renderTabbar();
   // signed-in users get their workspace one click away
