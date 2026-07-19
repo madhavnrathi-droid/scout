@@ -1,29 +1,13 @@
 {
-  "name": "timshel",
-  "version": "2.0.0",
+  "name": "scout",
+  "version": "37.0.0",
   "type": "module",
-  "description": "timshel — every opportunity worth your time. Scraper-first, applicant-first discovery for academic and professional opportunities in India.",
+  "private": true,
+  "description": "Scout — every opportunity worth your time. Live opportunity discovery, admissions, and an application copilot for Indian students.",
+  "homepage": "https://opportune-six.vercel.app",
   "scripts": {
-    "start": "node api/index.js",
-    "dev": "NODE_ENV=development PG_LOG=1 node api/index.js",
-    "seed": "node api/db/seed.js",
-    "crawl": "node crawler/run-to-pg.js",
-    "db:schema": "psql $DATABASE_URL -f api/db/schema.sql",
-    "db:reset": "psql $DATABASE_URL -f api/db/schema.sql && node api/db/seed.js"
+    "dev": "node scripts/dev.mjs 3001",
+    "check": "node --check public/scout.js && for f in api/*.js api/_lib/*.js; do node --check \"$f\" || exit 1; done && echo 'all files parse'"
   },
-  "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "cheerio": "^1.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^16.4.5",
-    "express": "^4.19.2",
-    "jsonwebtoken": "^9.0.2",
-    "pg": "^8.13.0"
-  },
-  "devDependencies": {
-    "playwright": "^1.60.0"
-  },
-  "engines": {
-    "node": ">=20"
-  }
+  "engines": { "node": ">=20" }
 }
