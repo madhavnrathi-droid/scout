@@ -140,7 +140,7 @@ let API_LIVE = false;
 let FEED_META = {};
 const S = {
   user: null, profile: {}, saved: new Set(), applied: [], pipe: {}, kit: {}, accounts: {},
-  attached: [], chatFiles: [], scope: 'feed', lastViewed: null, master: {}, docsIdx: {}, admStage: 'all', admRegion: 'all', mpOpen: 'personal', dashSec: 'paths', admField: 'all', admState: 'all', admDur: 'all', admFee: 'all', admSchol: false, admExam: null,
+  attached: [], chatFiles: [], scope: 'feed', lastViewed: null, master: {}, docsIdx: {}, admStage: 'all', admRegion: 'all', mpOpen: 'personal', dashSec: 'today', trackFilter: 'live', dosOpen: 'personal', notifLim: 15, demo: false, admField: 'all', admState: 'all', admDur: 'all', admFee: 'all', admSchol: false, admExam: null,
   scView: 'overview', apply: null,
   onb: 0,
   onbData: { name: '', role: '', looking: [], domains: [], institution: '', gradYear: '', cgpa: '', city: '', geo: '', relocate: false, goal: '', reminders: true, digest: false },
@@ -325,6 +325,7 @@ function userVector() {
   const W = { saved: 1, draft: 2.5, applied: 4, result: 4 };
   let engaged = 0;
   for (const rec of Object.values(S.pipe || {})) {
+    if (rec && rec._demo) continue;              // demo records never teach the recommender
     const o = rec && rec.snap; if (!o) continue;
     const w = W[rec.stage] || 1; engaged += w;
     typeAff[o.type] = (typeAff[o.type] || 0) + w;
@@ -695,6 +696,35 @@ function pipeCounts() { const c = {}; for (const s of STAGES) c[s.v] = pipeIn(s.
 /* the live card if the feed still has it, else the snapshot we kept */
 function pipeOpp(p) { return DATA.find((o) => String(o.id) === p.id) || p.snap; }
 function logAct(k, id) { const a = ls('scout-acts') || []; a.push({ k, id, t: Date.now() }); ls('scout-acts', a.slice(-500)); }
+/* Days from the SNAPSHOT, not the live feed — snapOf never stores days_left, so
+   reading o.days_left silently yields undefined for anything the feed rotated out. */
+function pipeDays(p) {
+  const ts = p && p.snap && p.snap.deadline_ts;
+  return ts ? Math.ceil((ts * 1000 - Date.now()) / 864e5) : null;
+}
+function deadlineHeat(d) {
+  if (d == null) return { cls: 'none', t: 'no date' };
+  if (d < 0) return { cls: 'gone', t: `closed ${Math.abs(d)}d ago` };
+  if (d === 0) return { cls: 'now', t: 'closes today' };
+  if (d <= 3) return { cls: 'now', t: `${d}d left` };
+  if (d <= 7) return { cls: 'soon', t: `${d}d left` };
+  if (d <= 21) return { cls: 'warm', t: `${d}d left` };
+  return { cls: 'cool', t: `${d}d left` };
+}
+/* Everything that needs you, worst first, each carrying the reason in words. */
+function riskItems() {
+  const out = [];
+  for (const p of Object.values(S.pipe || {})) {
+    if (!p.snap || !['saved', 'draft'].includes(p.stage)) continue;
+    const d = pipeDays(p); if (d == null) continue;
+    const pct = p.pct || 0;
+    if (d < 0) out.push({ ...p, _d: d, _sev: 3, _risk: `closed ${Math.abs(d)}d ago — you never sent it` });
+    else if (d <= 2) out.push({ ...p, _d: d, _sev: 0, _risk: `${d === 0 ? 'closes today' : `closes in ${d}d`} · draft ${pct}% done` });
+    else if (d <= 7 && pct < 60) out.push({ ...p, _d: d, _sev: 1, _risk: `closes in ${d}d · draft ${pct}% done` });
+    else if (d <= 14 && pct === 0) out.push({ ...p, _d: d, _sev: 2, _risk: `closes in ${d}d · not started` });
+  }
+  return out.sort((a, b) => a._sev - b._sev || a._d - b._d);
+}
 
 /* ═══════════ NAVIGATION ═══════════ */
 const CRUMB = { home: 'For You', discover: 'Discover', admissions: 'Admissions', scouted: 'Scouted', detail: 'Listing', agent: 'Agent', apply: 'Apply', profile: 'Profile' };
@@ -1462,7 +1492,7 @@ function setOutcome(id, v) {
   pipeSet(id, v === 'waiting' ? { stage: 'applied' } : { stage: 'result', outcome: v, resultAt: Date.now() }, o);
   closeSheet();
   toast(v === 'won' ? 'Logged — congratulations 🎉' : v === 'waiting' ? 'Still open — kept in Applied' : 'Logged. On to the next one.');
-  renderScouted();
+  if (dashLive()) renderDash(S.dashSec); else renderScouted();
 }
 
 /* ————— overview: the honest progress dashboard ————— */
@@ -3376,7 +3406,7 @@ async function uploadDoc(slot, input) {
     // every readable document gets read: marksheets fill your academics,
     // certificates get classified and become ammunition for applications
     if (/^image\//.test(fit.mime) && !/^(photo|signature)$/.test(slot)) extractDoc(slot, fit);
-    renderProfile();
+    refreshDossier();
   } catch (e) { toast(String(e.message || e)); }
   finally { if (cell) cell.classList.remove('busy'); }
 }
@@ -3404,15 +3434,15 @@ async function extractDoc(slot, fit) {
       certs.push({ slot, kind: f.kind || 'certificate', summary: f.summary || '' });
       S.master.certs = certs.slice(-40); ls('scout-master', S.master); invalidateUV();
     }
-    if (applied.length) { ls('scout-master', m); renderProfile(); toast(`Read it — filled ${applied.length} field${applied.length === 1 ? '' : 's'} from the document`); springPop(document.getElementById('ps-master')); }
-    else if (f.kind || f.summary) { renderProfile(); toast(`Read it — filed as “${f.kind || 'certificate'}”`); }
+    if (applied.length) { ls('scout-master', m); refreshDossier(); toast(`Read it — filled ${applied.length} field${applied.length === 1 ? '' : 's'} from the document`); if (!dashLive()) springPop(document.getElementById('ps-master')); }
+    else if (f.kind || f.summary) { refreshDossier(); toast(`Read it — filed as “${f.kind || 'certificate'}”`); }
     else toast('Read it — nothing new to fill');
   } catch (e) { toast('Could not read the document: ' + String(e.message || e)); }
 }
 async function deleteDoc(slot) {
   await idbDel('doc:' + slot);
   delete S.docsIdx[slot]; ls('scout-docsidx', S.docsIdx);
-  renderProfile(); toast('Removed');
+  refreshDossier(); toast('Removed');
 }
 async function downloadDoc(slot) {
   const doc = await idbGet('doc:' + slot);
@@ -3474,17 +3504,19 @@ function renderProfile() {
     </div>` })()}
 
     <div class="psec" id="ps-master"><h3>Application profile</h3>
-      <p class="psec-sub">Everything forms ask, answered once. Scout autofills every application — and the browser extension — from here.</p>
-      ${MASTER_SECTIONS.map((sec) => `
-      <div class="mp-sec ${S.mpOpen === sec.id ? 'open' : ''}">
+      <p class="psec-sub">Everything forms ask, answered once — Scout autofills every application, and the browser extension, from here. This is the read-only view; edit it in your dashboard.</p>
+      <button class="pill pill-dark" style="margin-bottom:16px" onclick="openDash('dossier')">${ic('pen', 14)} Edit in dashboard</button>
+      ${MASTER_SECTIONS.map((sec) => {
+        const filled = sec.fields.filter((f) => String(S.master[f[0]] || '').trim());
+        return `<div class="mp-sec ro ${S.mpOpen === sec.id ? 'open' : ''}">
         <button class="mp-head" onclick="S.mpOpen=S.mpOpen==='${sec.id}'?null:'${sec.id}';renderProfile()">
           ${ic(sec.icn, 15)}<b>${sec.t}</b>
-          <i>${sec.fields.filter((f) => String(S.master[f[0]] || '').trim()).length}/${sec.fields.length}</i>${ic('chev-down', 13)}
+          <i>${filled.length}/${sec.fields.length}</i>${ic('chev-down', 13)}
         </button>
-        ${S.mpOpen === sec.id ? `<div class="mp-grid">${sec.fields.map(([f, lab, type, opts]) => type === 'select'
-          ? `<label class="ap-f"><span>${lab}</span><select onchange="setMaster('${f}',this.value)">${(opts || []).map((o) => `<option value="${esc(o)}" ${S.master[f] === o ? 'selected' : ''}>${esc(o) || '—'}</option>`).join('')}</select></label>`
-          : `<label class="ap-f"><span>${lab}</span><input type="${type}" value="${esc(S.master[f] || '')}" onchange="setMaster('${f}',this.value)"></label>`).join('')}</div>` : ''}
-      </div>`).join('')}
+        ${S.mpOpen === sec.id ? `<div class="mp-read">${sec.fields.map(([f, lab]) => `
+          <div class="mpr"><span class="k">${lab}</span><span class="v ${String(S.master[f] || '').trim() ? '' : 'na'}">${esc(S.master[f] || '') || '—'}</span></div>`).join('')}
+          <button class="mp-edit" onclick="openDash('dossier')">${ic('pen', 12)} Edit these in the dashboard</button></div>` : ''}
+      </div>`; }).join('')}
     </div>
 
     ${linksPanelHTML()}
@@ -3580,6 +3612,8 @@ function toggleSave(id, btn) {
   invalidateUV(); queueSync();
   if (btn) { btn.classList.toggle('on', !on); btn.innerHTML = ic(!on ? 'bookmark-filled' : 'bookmark', 15); }
 }
+/* Four call sites used to repaint views sitting hidden behind the #dash screen. */
+function dashLive() { const d = document.getElementById('dash'); return !!(d && d.classList.contains('on')); }
 function refreshCurrent() { renderView(S.view); }
 function shareOpp(id) {
   const o = DATA.find((x) => String(x.id) === String(id)); if (!o) return;
@@ -3788,7 +3822,7 @@ async function setReminder(oppId, kind) {
   toast(`Scout will nudge you ${label}`);
   refreshCurrent();
 }
-function clearReminder(oppId) { ls('scout-reminders', reminders().filter((r) => r.oppId !== String(oppId))); refreshCurrent(); toast('Reminder removed'); }
+function clearReminder(oppId) { ls('scout-reminders', reminders().filter((r) => r.oppId !== String(oppId))); if (dashLive()) renderDash(S.dashSec); else refreshCurrent(); toast('Reminder removed'); }
 function checkReminders() {
   const now = Date.now(); let fired = 0;
   const all = reminders().map((r) => {
@@ -3816,7 +3850,8 @@ function logAgent(id, patch) {
   ls('scout-agentlog', all.slice(0, 40));
   if (patch.status === 'failed') pushNotif('agent', patch.label || 'Scout hit a snag', (patch.detail || 'The draft was not changed.') + ' Nothing was sent anywhere. Retry from the dashboard.', patch.oppId);
   const el = document.getElementById('dash-body');
-  if (el && S.dashSec === 'notifications') renderDash('notifications');
+  // Today and Tracking both surface failed jobs now, so they repaint too
+  if (el && dashLive() && ['notifications', 'today', 'tracking'].includes(S.dashSec)) renderDash(S.dashSec);
 }
 function retryAgentJob(id) {
   const job = agentLog().find((x) => x.id === id);
@@ -3826,33 +3861,34 @@ function retryAgentJob(id) {
 }
 
 /* ————— at-risk: deadline near + no meaningful draft (with the reason attached) ————— */
-function atRiskItems() {
-  return Object.values(S.pipe || {}).filter((p) => {
-    if (!p.snap || !['saved', 'draft'].includes(p.stage)) return false;
-    const dl = p.snap.deadline_ts ? Math.ceil((p.snap.deadline_ts * 1000 - Date.now()) / 864e5) : 999;
-    return dl > 0 && dl <= 7 && (p.pct || 0) < 60;
-  }).map((p) => {
-    const dl = Math.ceil((p.snap.deadline_ts * 1000 - Date.now()) / 864e5);
-    return { ...p, _risk: `closes in ${dl}d · draft ${p.pct || 0}% done` };
-  });
-}
+function atRiskItems() { return riskItems().filter((r) => r._sev <= 1); }
 
 /* ————— the screen ————— */
 const DASH_SECTIONS = [
+  ['today', 'Today', 'spark'],
   ['paths', 'Paths', 'compass'],
   ['tracking', 'Tracking', 'grid'],
-  ['queue', 'To apply', 'send'],
-  ['saved', 'Saved', 'bookmark'],
-  ['progress', 'Progress', 'zap'],
   ['dossier', 'Dossier', 'doc'],
   ['notifications', 'Notifications', 'bell'],
   ['chat', 'Scout AI', 'orb'],
 ];
+/* A returning user's S.dashSec may name a section we merged away. */
+const DASH_ALIAS = { queue: 'tracking', saved: 'tracking', progress: 'today' };
+const DASH_ALIAS_FILTER = { queue: 'live', saved: 'saved' };
+const TRACK_FILTERS = [
+  ['live', 'Live', (p, d) => ['saved', 'draft'].includes(p.stage) && (d == null || d >= 0)],
+  ['ready', 'Ready to send', (p) => ['saved', 'draft'].includes(p.stage) && (p.pct || 0) >= 75],
+  ['drafting', 'Drafting', (p) => p.stage === 'draft'],
+  ['saved', 'Saved', (p) => p.stage === 'saved'],
+  ['applied', 'Sent', (p) => p.stage === 'applied' || p.stage === 'result'],
+  ['closed', 'Closed / missed', (p, d) => d != null && d < 0 && !['applied', 'result'].includes(p.stage)],
+  ['all', 'Everything', () => true],
+];
 function openDash(sec) {
-  S.dashSec = sec || S.dashSec || 'paths';
+  const want = sec || S.dashSec || 'today';
+  S.dashSec = DASH_ALIAS[want] || want;
   show('dash');
-  renderDashNav();
-  renderDash(S.dashSec);
+  renderDash(S.dashSec, DASH_ALIAS_FILTER[want]);
 }
 function closeDash() {
   // put the chat shell back where the main app expects it
@@ -3861,45 +3897,224 @@ function closeDash() {
   show('main');
   goV('home');
 }
+function dashBadge(v) {
+  if (v === 'today') { const n = todayAgenda().length; return n ? { n, hot: riskItems().some((r) => r._sev <= 1) } : null; }
+  if (v === 'tracking') { const n = riskItems().length; return n ? { n, hot: true } : null; }
+  if (v === 'notifications') { const n = notifs().filter((x) => !x.read).length; return n ? { n, hot: agentLog().some((j) => j.status === 'failed') } : null; }
+  if (v === 'dossier') { const mc = masterCompleteness(); return mc.pct < 60 ? { n: mc.pct + '%', hot: false } : null; }
+  return null;
+}
 function renderDashNav() {
   const nav = document.getElementById('dash-nav');
   const nm = (S.user && S.user.name) || 'You';
   const ini = (nm[0] || 'S').toUpperCase();
+  const mc = masterCompleteness();
+  const chip = (cls) => DASH_SECTIONS.map(([v, t, icn]) => {
+    const b = dashBadge(v);
+    return `<button class="${cls} ${S.dashSec === v ? 'on' : ''}" onclick="renderDash('${v}')">${ic(icn, cls === 'dn-it' ? 16 : 14)}<span>${t}</span>${b ? `<em class="${b.hot ? 'hot' : ''}">${b.n}</em>` : ''}</button>`;
+  }).join('');
   nav.innerHTML = `
     <div class="dn-brand" onclick="closeDash()">${heartSVG()}<b>Scout</b><span class="dn-dot" id="dn-dot"></span></div>
-    <div class="dn-secs">${DASH_SECTIONS.map(([v, t, icn]) => {
-      const badge = v === 'notifications' ? notifs().filter((n) => !n.read).length : v === 'queue' ? pipeIn('saved').length + pipeIn('draft').length : 0;
-      return `<button class="dn-it ${S.dashSec === v ? 'on' : ''}" onclick="renderDash('${v}')">${ic(icn, 16)}<span>${t}</span>${badge ? `<em>${badge}</em>` : ''}</button>`;
-    }).join('')}</div>
-    <button class="dn-me" onclick="closeDash();goV('profile')">
+    <div class="dn-secs">${chip('dn-it')}</div>
+    <button class="dn-me" onclick="closeDash();goV('profile',{forceProfile:1})">
       <span class="as-av" style="background:${PASTELS[ini.charCodeAt(0) % PASTELS.length]}">${ini}</span>
-      <span class="as-mt"><b>${esc(nm.split(' ')[0])}</b><i>${masterCompleteness().pct}% ready</i></span>
+      <span class="as-mt"><b>${esc(nm.split(' ')[0])}</b><i id="dn-ready">${mc.pct}% ready</i></span>
     </button>`;
+  // the rail is display:none under 900px — mobile gets the same sections as a chip strip
+  const sw = document.getElementById('dash-switch');
+  if (sw) {
+    sw.innerHTML = chip('dsw-it');
+    hydrateIcons(sw);
+    const on = sw.querySelector('.dsw-it.on');
+    if (on) on.scrollIntoView({ behavior: 'auto', block: 'nearest', inline: 'center' });
+  }
   hydrateIcons(nav);
   paintStateDot();
 }
-function renderDash(sec) {
+function renderDash(sec, filter) {
+  const want = sec || 'today';
+  sec = DASH_ALIAS[want] || want;
+  if (filter) S.trackFilter = filter;
+  else if (DASH_ALIAS_FILTER[want]) S.trackFilter = DASH_ALIAS_FILTER[want];
   S.dashSec = sec;
   renderDashNav();
   const el = document.getElementById('dash-body');
-  const crumb = document.getElementById('dash-crumb');
   const meta = DASH_SECTIONS.find(([v]) => v === sec) || [];
-  crumb.innerHTML = `<span>Dashboard</span><em>/</em><b>${meta[1] || sec}</b>`;
-  // returning the chat shell if we're leaving the chat section
-  if (sec !== 'chat') {
+  document.getElementById('dash-crumb').innerHTML = `<span>Dashboard</span><em>/</em><b>${meta[1] || sec}</b>`;
+  if (sec !== 'chat') {                       // hand the live chat shell back to the main app
     const shell = document.querySelector('#dash-body .agent-shell');
     if (shell) document.getElementById('vw-agent').appendChild(shell);
   }
-  if (sec === 'paths') el.innerHTML = dashPaths();
-  else if (sec === 'tracking') el.innerHTML = dashTracking();
-  else if (sec === 'queue') el.innerHTML = dashQueue();
-  else if (sec === 'saved') el.innerHTML = dashSaved();
-  else if (sec === 'progress') el.innerHTML = dashProgress();
-  else if (sec === 'dossier') el.innerHTML = dashDossier();
+  if (sec === 'today') el.innerHTML = demoBanner() + dashToday();
+  else if (sec === 'paths') el.innerHTML = demoBanner() + dashPaths();
+  else if (sec === 'tracking') el.innerHTML = demoBanner() + dashTracking();
+  else if (sec === 'dossier') el.innerHTML = demoBanner() + dashDossier();
   else if (sec === 'notifications') { el.innerHTML = dashNotifs(); markNotifsRead(); }
   else if (sec === 'chat') { dashChat(el); }
+  else el.innerHTML = dashToday();
   hydrateIcons(el);
   animateIn(el);
+  el.scrollTop = 0;
+}
+
+/* ————— empty states —————
+   Name what will appear, say why it matters, give exactly one action. Every CTA
+   routes somewhere real: an empty section that only apologises is a dead end. */
+function emptyState(o) {
+  return `<div class="empty e-rich">
+    ${o.icon ? `<span class="e-ic">${ic(o.icon, 20)}</span>` : ''}
+    <div class="h">${o.title}</div>
+    <div class="s">${o.body}</div>
+    ${o.cta ? `<div class="e-acts">
+      <button class="pill pill-dark" onclick="${o.onclick}">${o.cta}</button>
+      ${o.secondary ? `<button class="pill pill-ghost" onclick="${o.secondaryClick}">${o.secondary}</button>` : ''}
+    </div>` : ''}
+    ${o.ghost ? `<div class="e-ghost" aria-hidden="true">${ghostRows(o.ghost, 3)}</div>` : ''}
+  </div>`;
+}
+/* Dimmed skeletons in the REAL row classes — the shape of what will appear.
+   Markup only: never touches S.pipe, so nothing can reach pipeCounts() or riskItems(). */
+function ghostRows(kind, n) {
+  let out = '';
+  for (let i = 0; i < (n || 3); i++) {
+    if (kind === 'path') out += `<div class="path-row"><span class="pr-img sm"></span><div class="pr-m"><b class="gh gh-t"></b><i class="gh gh-s"></i></div><div class="pr-steps"><span class="gh gh-p"></span><span class="gh gh-p"></span><span class="gh gh-p"></span></div></div>`;
+    else if (kind === 'tt') out += `<div class="tt-row"><span class="gh gh-pill"></span><span class="gh gh-t"></span><span class="gh gh-s"></span><span></span><span class="gh gh-s"></span><span></span></div>`;
+    else out += `<div class="nf-row"><span class="nf-ic gh gh-c"></span><div class="nf-m"><b class="gh gh-t"></b><i class="gh gh-s"></i></div></div>`;
+  }
+  return out;
+}
+const DASH_EMPTY = {
+  paths: { icon: 'compass', title: 'No paths yet', ghost: 'path',
+    body: 'Save an opportunity or an admission and it becomes a tracked path here — every milestone from first draft to result.',
+    cta: 'Find something worth pursuing', onclick: "closeDash();goV('discover')",
+    secondary: 'Browse admissions', secondaryClick: "closeDash();goV('admissions')" },
+  tracking: { icon: 'grid', title: 'Nothing tracked yet', ghost: 'tt',
+    body: 'Every opportunity you save lands here with its stage, deadline and how far the draft has got. It is the ledger Scout keeps so you never lose one.',
+    cta: 'Go find your first', onclick: "closeDash();goV('discover')",
+    secondary: 'See what closes this week', secondaryClick: "closeDash();goV('discover',{sort:'closing'})" },
+  dossier: { icon: 'doc', title: 'Your dossier is empty',
+    body: 'Answer these once and Scout fills them into every application — and into the browser extension. Start with your name and Class 12 marks; a marksheet upload fills most of the rest for you.',
+    cta: 'Start with personal details', onclick: "S.dosOpen='personal';renderDash('dossier')",
+    secondary: 'Upload a marksheet instead', secondaryClick: "closeDash();goV('profile',{scrollTo:'#ps-docs'})" },
+  notifications: { icon: 'check', title: 'All quiet', ghost: 'nf',
+    body: 'Deadline reminders, Scout\'s receipts and anything that needs you will land here. Interruptions stay rare on purpose.',
+    cta: 'Set a reminder on something', onclick: "closeDash();goV('discover')" },
+};
+function dashEmpty(k) { return emptyState(DASH_EMPTY[k]); }
+
+/* ————— demo mode —————
+   Real listings from the live feed, staged into a pipeline so the dashboard can be
+   SEEN populated. Deliberately in-memory only: never written to scout-pipe, so a
+   reload wipes it and it can't reach the recommender, real counts, or a backup. */
+function seedDemo() {
+  if (!DATA.length) return toast('Feed still loading — try again in a moment');
+  S._realPipe = S.pipe;
+  const pick = DATA.filter((o) => o.deadline_ts).sort((a, b) => (a.deadline_ts || 0) - (b.deadline_ts || 0));
+  const near = pick.filter((o) => { const d = Math.ceil((o.deadline_ts * 1000 - Date.now()) / 864e5); return d >= 0 && d <= 30; });
+  const use = (near.length >= 6 ? near : pick).slice(0, 8);
+  if (!use.length) return toast('No dated listings in the feed right now');
+  const DAY = 864e5, plan = [
+    { stage: 'draft', pct: 82 }, { stage: 'draft', pct: 15 }, { stage: 'saved', pct: 0 },
+    { stage: 'applied', pct: 100, ts: Date.now() - 26 * DAY }, { stage: 'saved', pct: 0 },
+    { stage: 'result', pct: 100, outcome: 'won', ts: Date.now() - 40 * DAY },
+    { stage: 'draft', pct: 55 }, { stage: 'applied', pct: 100, ts: Date.now() - 5 * DAY },
+  ];
+  const pipe = {};
+  use.forEach((o, i) => {
+    const q = plan[i % plan.length];
+    pipe[String(o.id)] = { id: String(o.id), snap: snapOf(o), ts: q.ts || Date.now() - i * 2 * DAY, _demo: true, ...q };
+  });
+  S.pipe = pipe;
+  S.demo = true;
+  invalidateUV();
+  toast('Demo data loaded — nothing was saved to this device');
+  openDash('today');
+}
+function clearDemo() {
+  if (S._realPipe) S.pipe = S._realPipe;
+  S._realPipe = null; S.demo = false;
+  invalidateUV();
+  toast('Demo data cleared');
+  renderDash(S.dashSec);
+}
+function demoBanner() {
+  return S.demo ? `<div class="demo-bar">${ic('spark', 14)}
+    <div><b>Demo data</b><i>Sample pipeline built from real live listings. Nothing is saved — reload and it is gone.</i></div>
+    <button class="pill pill-ghost pill-sm" onclick="clearDemo()">Clear demo data</button></div>` : '';
+}
+
+/* ————— Today: the one section that answers "what do I do next" —————
+   NOTE ON ESCAPING: titles and reasons are escaped HERE, at source, and
+   interpolated raw below — because masterNudge()[2] is an onclick string that
+   must NOT be escaped. Any new agenda source must call esc() itself. */
+function todayAgenda() {
+  const out = [];
+  const fails = agentLog().filter((j) => j.status === 'failed');
+  for (const j of fails.slice(0, 2)) out.push({ kind: 'fail', icon: 'zap',
+    title: esc(j.label || 'A Scout job failed'), why: esc((j.detail || '') + ' Nothing was sent.'),
+    cta: 'Retry', onclick: `retryAgentJob('${j.id}')` });
+  for (const r of riskItems().filter((x) => x._sev <= 2).slice(0, 3)) out.push({ kind: 'risk', icon: 'clock',
+    sev: r._sev, title: esc(shortTitle(r.snap)), why: esc(r._risk),
+    cta: r._sev === 3 ? 'Review' : (r.pct || 0) >= 75 ? 'Review & send' : 'Work on it',
+    onclick: `closeDash();startApply('${r.id}')` });
+  const due = reminders().filter((r) => !r.done && r.due <= Date.now() + 2 * 864e5).slice(0, 2);
+  for (const r of due) out.push({ kind: 'remind', icon: 'bell',
+    title: esc(r.title || 'Reminder'), why: r.kind === 'opens' ? 'the window opens' : 'deadline nudge',
+    cta: 'Open', onclick: `closeDash();openDetail('${r.oppId}')` });
+  const stale = Object.values(S.pipe || {}).filter((p) => p.snap && p.stage === 'applied' && (Date.now() - (p.ts || 0)) > 21 * 864e5).slice(0, 2);
+  for (const p of stale) out.push({ kind: 'stale', icon: 'check',
+    title: esc(shortTitle(p.snap)), why: 'sent over three weeks ago — did you hear back?',
+    cta: 'Log the result', onclick: `askOutcome('${p.id}')` });
+  const nudge = masterNudge();
+  if (nudge) out.push({ kind: 'dossier', icon: 'user', title: esc(nudge[0]), why: esc(nudge[1]), cta: 'Do it', onclick: nudge[2] });
+  return out.slice(0, 7);
+}
+function dashToday() {
+  const nm = ((S.user && S.user.name) || 'there').split(' ')[0];
+  const hr = new Date().getHours();
+  const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
+  const agenda = todayAgenda();
+  const c = pipeCounts();
+  const all = Object.values(S.pipe).filter((p) => p.snap);
+  const sent = c.applied + c.result;
+  const tracked = c.saved + c.draft + sent;
+  const slipped = all.filter((p) => ['saved', 'draft'].includes(p.stage) && (pipeDays(p) != null && pipeDays(p) < 0)).length;
+  const hours = all.filter((p) => p.stage !== 'saved').reduce((n, p) => n + (EFFORT_HOURS[p.snap.type] || 8), 0);
+  const stake = all.filter((p) => p.stage === 'applied' || p.stage === 'result').reduce((n, p) => n + (p.snap.prize_cash || 0), 0);
+  const sevCls = (a) => a.kind === 'fail' ? 'sev-fail' : a.sev === 0 || a.sev === 3 ? 'sev-hot' : a.sev === 1 ? 'sev-warm' : '';
+  // every tile routes into a Tracking filter — a number you cannot act on is decoration
+  const tile = (v, l, sub, f) => `<button class="td-tile" onclick="renderDash('tracking','${f}')"><b>${v}</b><span>${l}</span><i>${sub}</i></button>`;
+  return `<h2 class="dash-h">${greet}, ${esc(nm)}.</h2>
+    <p class="dash-sub">${agenda.length ? `${agenda.length} ${agenda.length === 1 ? 'thing needs' : 'things need'} you today.` : 'Nothing is at risk. This is what on-top-of-it looks like.'}</p>
+    ${agenda.length ? `<div class="td-list">${agenda.map((a) => `
+      <div class="td-row ${sevCls(a)}">
+        <span class="td-ic">${ic(a.icon, 15)}</span>
+        <div class="td-m"><b>${a.title}</b><i>${a.why}</i></div>
+        <button class="pill pill-dark pill-sm" onclick="${a.onclick}">${a.cta}</button>
+      </div>`).join('')}</div>`
+    : tracked ? `<div class="td-clear">${ic('check', 22)}<div><b>You are clear.</b><i>Nothing closing, nothing stalled, nothing waiting on you.</i></div>
+        <button class="pill pill-ghost" onclick="closeDash();goV('discover')">Find something new</button></div>`
+    : emptyState({ icon: 'spark', title: `Welcome, ${esc(nm)}.`,
+        body: 'Scout is watching thousands of live opportunities and 96 admission cycles. Save the first one that fits and this page becomes your daily to-do — deadlines, drafts, and what needs you next.',
+        cta: 'Show me what fits me', onclick: "closeDash();goV('home')",
+        secondary: 'Preview with sample data', secondaryClick: 'seedDemo()' })}
+    ${tracked ? `<div class="td-tiles">
+      ${tile(sent, 'actually sent', `${tracked ? Math.round(sent / tracked * 100) : 0}% follow-through`, 'applied')}
+      ${tile(c.draft, 'in draft', c.draft ? 'pick one up' : 'nothing half-finished', 'drafting')}
+      ${tile(slipped, 'slipped past', slipped ? 'closed before you sent' : 'none missed', 'closed')}
+      ${tile('₹' + shortIN(stake), 'riding on it', `${hours} hrs invested`, 'applied')}
+    </div>
+    <div class="td-heat"><div class="q-grp">Next 21 days</div><div class="heat-strip">${(() => {
+      const days = [];
+      for (let i = 0; i < 21; i++) {
+        const n = all.filter((p) => pipeDays(p) === i).length;
+        days.push(`<span class="hd ${n ? 'has' : ''} ${n > 1 ? 'many' : ''}" title="${i === 0 ? 'today' : 'in ' + i + ' days'}: ${n} closing">${n ? `<em>${n}</em>` : ''}</span>`);
+      }
+      return days.join('');
+    })()}</div></div>` : ''}
+    ${!tracked && !S.demo ? `<div class="td-demo">${ic('spark', 15)}
+      <div><b>Want to see this full?</b><i>Load a sample pipeline built from real live listings — nothing is saved to this device.</i></div>
+      <button class="pill pill-ghost pill-sm" onclick="seedDemo()">Preview with sample data</button></div>` : ''}`;
 }
 
 /* Paths — every live pursuit as a milestone journey (admissions get their real path) */
@@ -3923,7 +4138,7 @@ function pathSteps(p) {
 }
 function dashPaths() {
   const items = Object.values(S.pipe).filter((p) => p.snap).sort((a, b) => (a.snap.deadline_ts || 9e9) - (b.snap.deadline_ts || 9e9));
-  if (!items.length) return `<div class="empty"><div class="h">No paths yet</div><div class="s">Save an opportunity or an admission and it becomes a tracked path here.</div><button class="pill pill-dark" onclick="closeDash();goV('discover')">Find something worth pursuing</button></div>`;
+  if (!items.length) return dashEmpty('paths');
   const risks = new Map(atRiskItems().map((r) => [r.id, r._risk]));
   return `<h2 class="dash-h">Paths</h2><p class="dash-sub">Everything you are pursuing, as journeys — soonest gate first.</p>
     <div class="path-list">${items.map((p) => {
@@ -3952,93 +4167,140 @@ function dashPaths() {
 }
 /* Tracking — the full ledger with Vanilla status discipline */
 function dashTracking() {
-  const items = Object.values(S.pipe).filter((p) => p.snap).sort((a, b) => (b.ts || 0) - (a.ts || 0));
-  const risks = new Map(atRiskItems().map((r) => [r.id, r._risk]));
+  const all = Object.values(S.pipe).filter((p) => p.snap);
   const log = agentLog().slice(0, 6);
-  return `<h2 class="dash-h">Tracking</h2><p class="dash-sub">${items.length} tracked · ${risks.size ? `<b style="color:var(--red)">${risks.size} at risk</b>` : 'nothing at risk'} · every state change is kept</p>
-    ${log.length ? `<div class="dt-log"><div class="dtl-h">${ic('zap', 13)} Scout's recent work</div>${log.map((j) => `
+  const logHTML = log.length ? `<div class="dt-log"><div class="dtl-h">${ic('zap', 13)} Scout's recent work</div>${log.map((j) => `
       <div class="dtl-row"><span class="dtl-st ${j.status}">${j.status === 'running' ? '<i class="spin2"></i>' : j.status === 'failed' ? '✕' : j.status === 'done' ? '✓' : '·'}</span>
       <span class="dtl-t">${esc(j.label || j.kind || 'job')}</span><i>${new Date(j.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</i>
-      ${j.status === 'failed' ? `<button class="pill pill-ghost pill-sm" onclick="retryAgentJob('${j.id}')">Retry</button>` : ''}</div>`).join('')}</div>` : ''}
-    <div class="track-table">${items.map((p) => {
-      const o = pipeOpp(p); if (!o) return '';
-      const stg = STAGES.find((s) => s.v === p.stage) || STAGES[0];
-      const risk = risks.get(p.id);
-      return `<div class="tt-row" onclick="closeDash();${o.type === 'Admission' ? `goV('admissions',{open:'${p.id}'})` : `openDetail('${p.id}')`}">
-        <span class="stage-pill" style="--sc:${stg.col}">${stg.t}</span>
-        <span class="tt-t">${esc(shortTitle(o))}</span>
-        <span class="tt-pct">${p.pct ? `<i class="ttp-bar"><b style="width:${p.pct}%"></b></i>${p.pct}%` : ''}</span>
-        <span class="tt-risk">${risk ? `<em>${risk}</em>` : ''}</span>
-        <span class="tt-ts">${new Date(p.ts || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
-        <span class="tt-act" onclick="event.stopPropagation()"><button class="pill pill-ghost pill-sm" onclick="closeDash();startApply('${p.id}')">${p.stage === 'saved' ? 'Start' : p.stage === 'draft' ? 'Continue' : 'Open'}</button></span>
-      </div>`;
-    }).join('')}</div>`;
+      ${j.status === 'failed' ? `<button class="pill pill-ghost pill-sm" onclick="retryAgentJob('${j.id}')">Retry</button>` : ''}</div>`).join('')}</div>` : '';
+  // the agent log can be non-empty while the pipeline is empty, so it sits outside the guard
+  if (!all.length) return `<h2 class="dash-h">Tracking</h2>${logHTML}${dashEmpty('tracking')}`;
+
+  const f = TRACK_FILTERS.find(([k]) => k === S.trackFilter) || TRACK_FILTERS[0];
+  const rows = all.filter((p) => f[2](p, pipeDays(p))).sort((a, b) => {
+    const da = pipeDays(a), db = pipeDays(b);
+    return (da == null ? 9e9 : da) - (db == null ? 9e9 : db);
+  });
+  const risks = new Map(riskItems().map((r) => [r.id, r._risk]));
+  const GROUPS = [['This week', (d) => d != null && d >= 0 && d <= 7], ['Next three weeks', (d) => d != null && d > 7 && d <= 21],
+    ['Later', (d) => d == null || d > 21], ['Closed', (d) => d != null && d < 0]];
+
+  const row = (p) => {
+    const o = pipeOpp(p); if (!o) return '';
+    const stg = STAGES.find((x) => x.v === p.stage) || STAGES[0];
+    const d = pipeDays(p), heat = deadlineHeat(d), risk = risks.get(p.id);
+    const kept = !DATA.some((x) => String(x.id) === p.id);   // listing rotated out of the live feed
+    return `<div class="tt-row" onclick="closeDash();${o.type === 'Admission' ? `goV('admissions',{open:'${p.id}'})` : `openDetail('${p.id}')`}">
+      <span class="stage-pill" style="--sc:${stg.col}">${stg.t}</span>
+      <span class="tt-t">${esc(shortTitle(o))}${kept ? '<em class="tt-kept" title="No longer in the live feed — Scout kept your copy">kept</em>' : ''}</span>
+      <span class="tt-pct">${p.pct ? `<i class="ttp-bar"><b style="width:${p.pct}%"></b></i>${p.pct}%` : ''}</span>
+      <span class="tt-risk">${risk ? `<em>${esc(risk)}</em>` : `<span class="tt-heat ${heat.cls}">${heat.t}</span>`}</span>
+      <span class="tt-ts">${new Date(p.ts || Date.now()).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+      <span class="tt-act" onclick="event.stopPropagation()">${p.stage === 'applied'
+        ? `<button class="pill pill-dark pill-sm" onclick="askOutcome('${p.id}')">Log result</button>`
+        : `<button class="pill pill-ghost pill-sm" onclick="closeDash();startApply('${p.id}')">${p.stage === 'saved' ? 'Start' : p.stage === 'draft' ? 'Continue' : 'Open'}</button>`}</span>
+    </div>`;
+  };
+  const ready = rows.filter((p) => ['saved', 'draft'].includes(p.stage) && (p.pct || 0) < 75);
+  return `<h2 class="dash-h">Tracking</h2>
+    <p class="dash-sub">${all.length} tracked · ${risks.size ? `<b style="color:var(--red)">${risks.size} need${risks.size === 1 ? 's' : ''} you</b>` : 'nothing at risk'} · every state change is kept</p>
+    <div class="tk-chips">${TRACK_FILTERS.map(([k, t, fn]) => {
+      const n = all.filter((p) => fn(p, pipeDays(p))).length;
+      return `<button class="chip ${S.trackFilter === k ? 'on' : ''}" onclick="renderDash('tracking','${k}')">${t}${n ? ` <em>${n}</em>` : ''}</button>`;
+    }).join('')}</div>
+    ${logHTML}
+    ${AI_ENABLED && ready.length > 1 ? `<button class="pill pill-dark" style="margin:0 0 16px" onclick="draftMany([${ready.slice(0, 5).map((p) => `'${p.id}'`).join(',')}])">${ic('zap', 14)} Draft the next ${Math.min(ready.length, 5)} in the background</button>` : ''}
+    ${rows.length ? GROUPS.map(([t, test]) => {
+      const g = rows.filter((p) => test(pipeDays(p)));
+      return g.length ? `<div class="q-grp">${t} <em>${g.length}</em></div><div class="track-table">${g.map(row).join('')}</div>` : '';
+    }).join('') : `<div class="empty"><div class="h">Nothing in “${esc(f[1])}”</div><div class="s">Try another filter — everything you track is still here.</div></div>`}`;
 }
-/* Queue — what to apply to, ready-first */
-function dashQueue() {
-  const pool = [...pipeIn('draft'), ...pipeIn('saved')].filter((p) => p.snap && (pipeOpp(p) || {}).days_left > 0);
-  const ready = pool.filter((p) => (p.pct || 0) >= 75);
-  const rest = pool.filter((p) => (p.pct || 0) < 75).sort((a, b) => (a.snap.deadline_ts || 9e9) - (b.snap.deadline_ts || 9e9));
-  const row = (p) => { const o = pipeOpp(p); return `<div class="q-row"><span class="pr-img sm">${o.imgThumb || o.img ? `<img src="${esc(o.imgThumb || o.img)}" onerror="this.style.display='none'">` : ic('send', 14)}</span>
-    <div class="q-main"><b>${esc(shortTitle(o))}</b><i>${o.days_left}d left · ${p.pct || 0}% drafted</i></div>
-    <button class="pill ${(p.pct || 0) >= 75 ? 'pill-red' : 'pill-dark'} pill-sm" onclick="closeDash();startApply('${p.id}')">${(p.pct || 0) >= 75 ? 'Review & send' : 'Draft'}</button></div>`; };
-  return `<h2 class="dash-h">To apply</h2><p class="dash-sub">${pool.length} in the queue · ${ready.length} ready to send</p>
-    ${AI_ENABLED && rest.length > 1 ? `<button class="pill pill-dark" style="margin-bottom:18px" onclick="draftMany([${rest.slice(0, 5).map((p) => `'${p.id}'`).join(',')}])">${ic('zap', 14)} Draft the next ${Math.min(rest.length, 5)} in the background</button>` : ''}
-    ${ready.length ? `<div class="q-grp">Ready</div>${ready.map(row).join('')}` : ''}
-    ${rest.length ? `<div class="q-grp">Needs drafting</div>${rest.map(row).join('')}` : ''}
-    ${!pool.length ? `<div class="empty"><div class="h">Queue is clear</div><div class="s">Saved opportunities that are still open appear here.</div></div>` : ''}`;
+/* pct is a weighted blend and rounds to 0 while fields are genuinely filled,
+   so "is it empty" must ask the underlying data, never masterCompleteness(). */
+function dossierBlank() {
+  return !MASTER_SECTIONS.some((sec) => sec.fields.some((f) => String(S.master[f[0]] || '').trim()))
+      && !ESSAY_BANK.some(([k]) => String(S.master[k] || '').trim())
+      && !Object.keys(S.docsIdx || {}).length;
 }
-function dashSaved() {
-  const items = pipeIn('saved').map(pipeOpp).filter(Boolean);
-  return `<h2 class="dash-h">Saved</h2><p class="dash-sub">${items.length} bookmarked</p>
-    <div class="grid-cards dash-cards">${items.map((o) => scardHTML(o)).join('') || '<div class="empty" style="grid-column:1/-1"><div class="h">Nothing saved</div></div>'}</div>`;
+/* Value changes PATCH in place. Never re-render from a keystroke — repainting
+   #dash-body while a field is focused drops the caret mid-sentence. */
+function setMasterInline(el, f) {
+  setMaster(f, el.value);
+  const w = el.closest('.dosf');
+  if (w) { w.classList.add('saved'); clearTimeout(w._sv); w._sv = setTimeout(() => w.classList.remove('saved'), 1200); }
+  const mc = masterCompleteness();
+  const bar = document.querySelector('#dos-mc i'); if (bar) bar.style.width = mc.pct + '%';
+  const lbl = document.getElementById('dos-mc-l'); if (lbl) lbl.textContent = mc.pct + '% complete';
+  const rdy = document.getElementById('dn-ready'); if (rdy) rdy.textContent = mc.pct + '% ready';
+  const cnt = document.querySelector(`.dos-chip[data-sec="${S.dosOpen}"] em`);
+  const sec = MASTER_SECTIONS.find((x) => x.id === S.dosOpen);
+  if (cnt && sec) cnt.textContent = sec.fields.filter((x) => String(S.master[x[0]] || '').trim()).length + '/' + sec.fields.length;
 }
-function dashProgress() {
-  const c = pipeCounts();
-  const acts = ls('scout-acts') || [];
-  const applied = c.applied + c.result;
-  const won = Object.values(S.pipe).filter((p) => p.outcome === 'won' || p.outcome === 'shortlist').length;
-  return `<h2 class="dash-h">Progress</h2><p class="dash-sub">The honest funnel — follow-through beats volume.</p>
-    <div class="prog-stats">
-      ${[[c.saved + c.draft + applied, 'tracked'], [c.draft, 'drafting'], [applied, 'applied'], [won, 'wins & shortlists']].map(([n, l]) => `<div class="pg-stat"><b data-count="${n}">0</b><span>${l}</span></div>`).join('')}
-    </div>
-    <div class="sc-funnel" style="margin:22px 0">${STAGES.map((s) => { const n = pipeIn(s.v).length; const max = Math.max(...STAGES.map((x) => pipeIn(x.v).length), 1); return `<div class="scf-row"><span class="scf-l">${ic(s.icn, 13)} ${s.t}</span><div class="scf-bar"><i style="width:${Math.max(4, n / max * 100)}%;background:${s.col}"></i></div><b>${n}</b></div>`; }).join('')}</div>
-    ${actGridHTML()}`;
+/* Uploads and AI extraction land wherever the user is actually looking. */
+function refreshDossier() {
+  if (dashLive()) { if (S.dashSec === 'dossier') renderDash('dossier'); else renderDashNav(); return; }
+  if (S.view === 'profile') renderProfile();
 }
 function dashDossier() {
   const mc = masterCompleteness();
+  const nudge = masterNudge();
   const docs = Object.entries(S.docsIdx || {});
-  return `<h2 class="dash-h">Dossier</h2><p class="dash-sub">Everything Scout knows and files on your behalf — ${mc.pct}% complete.</p>
-    <div class="mc-bar" style="max-width:420px"><i style="width:${mc.pct}%"></i></div>
+  if (dossierBlank()) return `<h2 class="dash-h">Dossier</h2>${dashEmpty('dossier')}`;
+  const open = MASTER_SECTIONS.find((x) => x.id === S.dosOpen) || MASTER_SECTIONS[0];
+  return `<h2 class="dash-h">Dossier</h2>
+    <p class="dash-sub">Everything Scout knows and files on your behalf. Edit anything here — it saves as you go.</p>
+    <div class="dos-mc"><div class="mc-bar" id="dos-mc"><i style="width:${mc.pct}%"></i></div>
+      <span id="dos-mc-l">${mc.pct}% complete</span></div>
+    ${nudge ? `<div class="dos-nudge"><span>${ic('spark', 15)}</span><div><b>${esc(nudge[0])}</b><i>${esc(nudge[1])}</i></div>
+      <button class="pill pill-dark pill-sm" onclick="closeDash();${nudge[2]}">Do it</button></div>` : ''}
+    <div class="dos-chips">${MASTER_SECTIONS.map((sec) => {
+      const filled = sec.fields.filter((f) => String(S.master[f[0]] || '').trim()).length;
+      return `<button class="dos-chip ${S.dosOpen === sec.id ? 'on' : ''}" data-sec="${sec.id}" onclick="S.dosOpen='${sec.id}';renderDash('dossier')">${ic(sec.icn, 14)}${sec.t}<em>${filled}/${sec.fields.length}</em></button>`;
+    }).join('')}</div>
+    <div class="dos-fields">${open.fields.map(([f, lab, type, opts]) => `
+      <label class="dosf ${String(S.master[f] || '').trim() ? 'has' : ''}"><span>${lab}</span>
+        ${type === 'select'
+          ? `<select onchange="setMasterInline(this,'${f}')">${(opts || []).map((o) => `<option value="${esc(o)}" ${S.master[f] === o ? 'selected' : ''}>${esc(o) || '—'}</option>`).join('')}</select>`
+          : `<input type="${type}" value="${esc(S.master[f] || '')}" onchange="setMasterInline(this,'${f}')">`}
+        <i class="dosf-ok">${ic('check', 12)}</i>
+      </label>`).join('')}</div>
+    <div class="q-grp" style="margin-top:28px">The rest of your record</div>
     <div class="dos-grid">
-      ${MASTER_SECTIONS.map((sec) => { const filled = sec.fields.filter((f) => String(S.master[f[0]] || '').trim()).length; return `
-        <button class="dos-card" onclick="closeDash();S.mpOpen='${sec.id}';goV('profile',{scrollTo:'#ps-master'})">
-          ${ic(sec.icn, 16)}<b>${sec.t}</b><i>${filled}/${sec.fields.length} filled</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>`; }).join('')}
       <button class="dos-card" onclick="closeDash();goV('profile',{scrollTo:'#ps-essays'})">${ic('pen', 16)}<b>Essay bank</b><i>${mc.essays}/${ESSAY_BANK.length} written</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
+      <button class="dos-card" onclick="closeDash();goV('profile',{scrollTo:'#ps-docs'})">${ic('upload', 16)}<b>Documents</b><i>${docs.length} on file${docs.length ? ' · ' + docs.filter(([, d]) => d.kind).length + ' AI-read' : ''}</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
+      <button class="dos-card" onclick="closeDash();goV('profile',{scrollTo:'#ps-links'})">${ic('link', 16)}<b>Links & portfolios</b><i>${((S.master || {}).links || []).length} connected</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
       <button class="dos-card" onclick="closeDash();goV('profile',{scrollTo:'#ps-acct'})">${ic('shield', 16)}<b>Your data</b><i>On this device · backup &amp; restore</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
-      <button class="dos-card" onclick="closeDash();goV('profile',{scrollTo:'#ps-docs'})">${ic('upload', 16)}<b>Documents</b><i>${docs.length} on file${docs.length ? ' · ' + docs.filter(([, d]) => d.kind).length + ' AI-classified' : ''}</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
     </div>
     ${docs.length ? `<div class="q-grp" style="margin-top:26px">What your documents prove</div>
-      <div class="dos-docs">${docs.filter(([, d]) => d.summary).map(([slot, d]) => `<div class="dosd"><b>${esc(d.kind || docLabel(slot))}</b><i>${esc(d.summary)}</i></div>`).join('') || '<div class="dash-sub">Upload marksheets & certificates — Scout reads them and files what they prove.</div>'}</div>` : ''}`;
+      <div class="dos-docs">${docs.filter(([, d]) => d.summary).map(([slot, d]) => `<div class="dosd"><b>${esc(d.kind || docLabel(slot))}</b><i>${esc(d.summary)}</i></div>`).join('') || '<div class="dash-sub">Upload marksheets &amp; certificates — Scout reads them and files what they prove.</div>'}</div>` : ''}`;
 }
 function dashNotifs() {
   const all = notifs();
   const upcoming = reminders().filter((r) => !r.done).sort((a, b) => a.due - b.due);
   const log = agentLog();
+  const fails = log.filter((j) => j.status === 'failed');
+  if (!all.length && !upcoming.length && !fails.length) return `<h2 class="dash-h">Notifications</h2>${dashEmpty('notifications')}`;
+  // logAgent already pushNotifs every failure, so don't repeat those rows in Activity
+  const failIds = new Set(fails.map((j) => j.oppId).filter(Boolean));
+  const activity = all.filter((n) => !(n.kind === 'agent' && failIds.has(n.oppId)));
+  const shown = activity.slice(0, S.notifLim);
   return `<h2 class="dash-h">Notifications</h2><p class="dash-sub">Reminders, receipts, and anything that needs you. Interruptions stay rare.</p>
-    ${upcoming.length ? `<div class="q-grp">Coming up</div>${upcoming.slice(0, 8).map((r) => `<div class="nf-row up"><span class="nf-ic">${ic('bell', 14)}</span><div class="nf-m"><b>${esc(r.title)}</b><i>${r.kind === 'opens' ? 'window opens' : 'deadline nudge'} · ${new Date(r.due).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</i></div><button class="icbtn" data-ic="x" onclick="clearReminder('${r.oppId}');renderDash('notifications')" aria-label="Remove"></button></div>`).join('')}` : ''}
-    <div class="q-grp">Activity</div>
-    ${all.length ? all.slice(0, 20).map((n) => `<div class="nf-row ${n.kind}"><span class="nf-ic">${ic(n.kind === 'agent' ? 'zap' : n.kind === 'reminder' ? 'bell' : 'check', 14)}</span>
-      <div class="nf-m"><b>${esc(n.title)}</b><i>${esc(n.body)}</i></div><time>${new Date(n.ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</time></div>`).join('')
-    : '<div class="dash-sub">All quiet. Reminders and Scout receipts will land here.</div>'}
-    ${log.some((j) => j.status === 'failed') ? `<div class="q-grp">Needs retry</div>${log.filter((j) => j.status === 'failed').map((j) => `<div class="nf-row agent"><span class="nf-ic">✕</span><div class="nf-m"><b>${esc(j.label || 'Agent job')}</b><i>${esc(j.detail || '')} Nothing was sent.</i></div><button class="pill pill-ghost pill-sm" onclick="retryAgentJob('${j.id}')">Retry</button></div>`).join('')}` : ''}`;
+    ${upcoming.length ? `<div class="q-grp">Coming up <em>${upcoming.length}</em></div>${upcoming.slice(0, 8).map((r) => `<div class="nf-row up"><span class="nf-ic">${ic('bell', 14)}</span><div class="nf-m"><b>${esc(r.title)}</b><i>${r.kind === 'opens' ? 'window opens' : 'deadline nudge'} · ${new Date(r.due).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</i></div><button class="icbtn" data-ic="x" onclick="clearReminder('${r.oppId}')" aria-label="Remove"></button></div>`).join('')}` : ''}
+    ${fails.length ? `<div class="q-grp">Needs retry <em>${fails.length}</em></div>${fails.map((j) => `<div class="nf-row agent"><span class="nf-ic">✕</span><div class="nf-m"><b>${esc(j.label || 'Agent job')}</b><i>${esc(j.detail || '')} Nothing was sent.</i></div><button class="pill pill-ghost pill-sm" onclick="retryAgentJob('${j.id}')">Retry</button></div>`).join('')}` : ''}
+    ${shown.length ? `<div class="q-grp">Activity</div>${shown.map((n) => `<div class="nf-row ${n.kind}"><span class="nf-ic">${ic(n.kind === 'agent' ? 'zap' : n.kind === 'reminder' ? 'bell' : 'check', 14)}</span>
+      <div class="nf-m"><b>${esc(n.title)}</b><i>${esc(n.body)}</i></div><time>${new Date(n.ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</time></div>`).join('')}
+      ${activity.length > shown.length ? `<button class="pill pill-ghost" style="margin-top:14px" onclick="S.notifLim+=25;renderDash('notifications')">Show ${Math.min(25, activity.length - shown.length)} more</button>` : ''}` : ''}`;
 }
 /* Scout AI — the Claude-suite layout, powered by the existing agent (moved, not cloned) */
 function dashChat(el) {
   el.innerHTML = '<div class="dc-host" id="dc-host"></div>';
+  const vw = document.getElementById('vw-agent');
+  // ensureAgentDOM is gated on dataset.built; if the shell was moved here and then
+  // destroyed by a re-render, clear the flag so it actually rebuilds.
+  if (!vw.querySelector('.agent-shell')) delete vw.dataset.built;
   ensureAgentDOM();
-  const shell = document.querySelector('.agent-shell');
-  document.getElementById('dc-host').appendChild(shell);
+  const shell = vw.querySelector('.agent-shell') || document.querySelector('.agent-shell');
+  if (shell) document.getElementById('dc-host').appendChild(shell);
   if (S.chat.length === 0) initChat('general', null);
   fitAgent();
 }
