@@ -3,7 +3,6 @@
 // and returns the structured fields a form would ask for — so the user never types
 // what a document already says. Groq's OpenAI-compatible endpoint with Llama-4 Scout
 // (multimodal) does the reading; we never store the model's raw output.
-import { sessionFrom } from './_lib/auth.js';
 
 // vision-capable model ids differ per provider — discover them from /models at runtime
 const VISION_FALLBACK = ['qwen/qwen3.6-27b', 'meta-llama/llama-4-scout-17b-16e-instruct', 'meta-llama/llama-4-maverick-17b-128e-instruct'];
@@ -29,7 +28,6 @@ export default async function handler(req, res) {
   res.setHeader('access-control-allow-headers', 'content-type, authorization');
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-  if (!sessionFrom(req)) return res.status(401).json({ error: 'not signed in' });
 
   const key = process.env.OPENAI_COMPAT_KEY;
   if (!key) return res.status(503).json({ error: 'document reading is not configured' });

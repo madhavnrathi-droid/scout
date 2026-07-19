@@ -145,7 +145,6 @@ const S = {
   onb: 0,
   onbData: { name: '', role: '', looking: [], domains: [], institution: '', gradYear: '', cgpa: '', city: '', geo: '', relocate: false, goal: '', reminders: true, digest: false },
   chat: [], ctx: null, busy: false,
-  authFlow: 'choose', authMode: 'signup', collegeInfo: null,
   view: 'home', disType: 'All', disSort: 'match', disQuery: '', disLoc: 'all',
   disView: 'foryou', disDomain: null, disCompMode: 'hot', disHorizon: 90, disCause: null,
   ledgerType: 'All', ledgerHorizon: 30, ledgerSort: 'prize',
@@ -254,11 +253,12 @@ function toggleMulti(k, v) { const a = S.onbData[k]; const i = a.indexOf(v); if 
 function onbNext() {
   if (S.onb < STEPS.length - 1) { S.onb++; renderOnb(); }
   else {
-    // questionnaire done → set up the account so everything is stored and portable
+    // questionnaire done → straight in. Everything is kept in this browser.
     S.profile = buildProfile();
     ls('scout-profile', S.profile);
-    S.authMode = 'signup'; S.authFlow = 'choose';
-    show('auth'); renderAuth();
+    S.user = { name: S.onbData.name || 'there', onboarded: true, ts: Date.now() };
+    ls('scout-user', S.user);
+    enterApp();
   }
 }
 function onbPrev() { if (S.onb > 0) { S.onb--; renderOnb(); } }
@@ -479,212 +479,96 @@ function whyMatch(o) {
 }
 
 /* ═══════════ AUTH (parity flows) ═══════════ */
-function detectInstitution(email) {
-  const dom = (email.split('@')[1] || '').toLowerCase();
-  const known = { 'iitm.ac.in': 'IIT Madras', 'iitb.ac.in': 'IIT Bombay', 'iitd.ac.in': 'IIT Delhi', 'iitk.ac.in': 'IIT Kanpur', 'iitkgp.ac.in': 'IIT Kharagpur', 'nitt.edu': 'NIT Trichy', 'bits-pilani.ac.in': 'BITS Pilani', 'iisc.ac.in': 'IISc Bengaluru', 'du.ac.in': 'Delhi University', 'vit.ac.in': 'VIT' };
-  if (known[dom]) return { name: known[dom], verified: true };
-  if (/\.(ac\.in|edu|edu\.in)$/.test(dom)) {
-    const guess = dom.split('.')[0].toUpperCase();
-    return { name: guess, verified: true };
-  }
-  return null;
-}
-function authBack() {
-  if (S.authFlow !== 'choose') { S.authFlow = 'choose'; renderAuth(); }
-  else if (S.user && S.user.onboarded) enterApp();
-  else { show('onb'); renderOnb(); }
-}
-function renderAuth() {
-  const body = document.getElementById('auth-body');
-  const c = pipeCounts();
-  const tracked = c.saved + c.draft + c.applied + c.result;
-  if (S.authFlow === 'choose') {
-    body.innerHTML = `<div class="auth-heart">${heartSVG()}</div>
-      <h1 class="auth-h">Keep your pipeline<br>when this device doesn't.</h1>
-      <p class="auth-p">${tracked
-        ? `You've tracked <b>${tracked}</b> ${tracked === 1 ? 'opportunity' : 'opportunities'}${c.draft ? ` and started <b>${c.draft}</b> ${c.draft === 1 ? 'draft' : 'drafts'}` : ''}. Right now that lives only in this browser — clear your history and it's gone.`
-        : 'Your profile, saves and drafts live in this browser only. An account carries them to your phone, and lets Scout email you before a deadline closes.'}</p>
-      <div class="auth-why">
-        ${[['bookmark', 'Your saves and drafts, everywhere'], ['bell', 'Deadline email 14 and 3 days out'], ['spark', 'Scout remembers your answers between applications']].map(([i, t]) =>
-          `<div class="aw"><span>${ic(i, 15)}</span>${t}</div>`).join('')}
-      </div>
-      <button class="pill pill-dark pill-lg wide" onclick="S.authMode='signup';S.authFlow='email';renderAuth()">Create your account</button>
-      <button class="pill pill-ghost wide" onclick="S.authMode='login';S.authFlow='email';renderAuth()">I already have one</button>
-      <button class="auth-skip" onclick="skipAccount()">Keep it on this device for now →</button>
-      <div class="auth-fine">${ic('help', 12)} Your data is encrypted before it is stored, and only you can read it. No spam, ever.</div>`;
-    hydrateIcons(body); return;
-  }
-  if (S.authFlow === 'email') {
-    const signup = S.authMode === 'signup';
-    body.innerHTML = `<h1 class="auth-h sm">${signup ? 'Create your account' : 'Welcome back'}</h1>
-      <p class="auth-p">${signup ? 'Use your college email and Scout unlocks student-only listings automatically.' : 'Everything you saved comes back — on any device.'}</p>
-      <div class="auth-form">
-        ${signup ? `<label class="ap-f"><span>Your name</span><input id="au-name" placeholder="Riya Sharma" value="${esc((S.user && S.user.name) || S.onbData.name || '')}"></label>` : ''}
-        <label class="ap-f"><span>Email</span><input id="au-email" type="email" placeholder="you@college.ac.in" oninput="sniffEmail(this.value)"></label>
-        <div id="au-college" class="au-college"></div>
-        <label class="ap-f"><span>Password</span><input id="au-pass" type="password" placeholder="At least 8 characters"></label>
-        <div class="auth-err" id="auth-err"></div>
-      </div>
-      <button class="pill pill-dark pill-lg wide" id="au-submit" onclick="doAuth()">${signup ? 'Create account' : 'Log in'}</button>
-      <button class="auth-skip" onclick="S.authFlow='choose';renderAuth()">← Back</button>`;
-    hydrateIcons(body);
-    setTimeout(() => document.getElementById(signup ? 'au-name' : 'au-email')?.focus(), 60);
-    return;
-  }
-}
-function sniffEmail(v) {
-  const el = document.getElementById('au-college'); if (!el) return;
-  const inst = detectInstitution(v);
-  S.collegeInfo = inst;
-  el.innerHTML = inst
-    ? `<div class="au-hit">${ic('check', 13)} <b>${esc(inst.name)}</b> recognised — student listings unlocked</div>` : '';
-  hydrateIcons(el);
-}
-function skipAccount() {
-  S.user = { name: (S.profile && S.profile.name) || S.onbData.name || 'there', onboarded: true, local: true, ts: Date.now() };
-  ls('scout-user', S.user);
-  enterApp();
-  toast('Saved on this device — create an account any time from Profile');
-}
-function openSignup() { S.authFlow = 'choose'; show('auth'); renderAuth(); }
 
-async function doAuth() {
-  const email = (document.getElementById('au-email') || {}).value?.trim() || '';
-  const pass = (document.getElementById('au-pass') || {}).value || '';
-  const name = ((document.getElementById('au-name') || {}).value || '').trim();
-  const err = document.getElementById('auth-err'); if (err) err.textContent = '';
-  const signup = S.authMode === 'signup';
-  if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) { if (err) err.textContent = 'Enter a valid email address'; return; }
-  if (pass.length < 8) { if (err) err.textContent = 'Password must be at least 8 characters'; return; }
-  if (signup && !name) { if (err) err.textContent = 'Tell us your name'; return; }
-  const btn = document.getElementById('au-submit');
-  if (btn) { btn.dataset.label = btn.textContent; btn.textContent = signup ? 'Creating your account…' : 'Signing you in…'; btn.disabled = true; }
-  try {
-    const r = await fetch(API_BASE + '/auth', {
-      method: 'POST', headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ action: signup ? 'signup' : 'login', email, password: pass, name, data: signup ? localDoc() : undefined }),
-      signal: AbortSignal.timeout(20000),
-    });
-    const d = await r.json().catch(() => ({}));
-    if (r.status === 503) {
-      // accounts are temporarily unavailable — don't strand them on this screen
-      S.user = { name: name || (S.profile && S.profile.name) || 'there', email, onboarded: true, local: true, ts: Date.now() };
-      ls('scout-user', S.user);
-      enterApp();
-      toast('Accounts are paused right now — Scout saved everything on this device, sign up later from Profile');
-      return;
-    }
-    if (!r.ok || !d.ok) throw new Error(d.error || 'Could not reach the server');
-    S.user = { ...d.user, token: d.token, onboarded: true };
-    ls('scout-user', S.user);
-    if (d.user.institution && S.profile && !S.profile.institution) { S.profile.institution = d.user.institution; ls('scout-profile', S.profile); }
-    await syncNow(true);                     // pull the cloud copy and merge it in
-    toast(signup ? `Account created — everything is saved to your account now` : `Welcome back, ${(d.user.name || '').split(' ')[0]}`);
-    enterApp();
-  } catch (e) {
-    if (err) err.textContent = String(e.message || e);
-    if (btn) { btn.textContent = btn.dataset.label || (signup ? 'Create account' : 'Log in'); btn.disabled = false; }
-  }
-}
-
-/* ————— cloud sync: localStorage stays the working copy, the account is the durable one ————— */
-function localDoc() {
-  return {
-    profile: S.profile || null,
-    pipe: S.pipe || {},
-    saved: [...(S.saved || [])],
-    kit: S.kit || {},
-    accounts: S.accounts || {},
-    master: S.master || {},
-    threads: (ls('scout-threads') || []).slice(0, 20),
-    scope: S.scope || 'feed',
-    updatedAt: Date.now(),
-  };
-}
-function applyDoc(d) {
-  if (!d) return;
-  if (d.profile) { S.profile = d.profile; ls('scout-profile', S.profile); invalidateUV(); }
-  if (d.pipe) { S.pipe = d.pipe; ls('scout-pipe', S.pipe); }
-  if (Array.isArray(d.saved)) { S.saved = new Set(d.saved.map(String)); ls('scout-saved', [...S.saved]); }
-  if (d.kit) { S.kit = d.kit; ls('scout-kit', S.kit); }
-  if (d.accounts) { S.accounts = d.accounts; ls('scout-accounts', S.accounts); }
-  if (d.master) { S.master = { ...(d.master || {}), ...(S.master || {}) }; ls('scout-master', S.master); }
-  if (Array.isArray(d.threads)) ls('scout-threads', d.threads);
-  if (d.scope) { S.scope = d.scope; ls('scout-scope', S.scope); }
-}
-let _syncT = 0, _syncChain = null;
-/* Syncs are serialized rather than dropped: a call that arrives while another is in
-   flight waits its turn instead of silently no-opping, which used to make a fresh
-   sign-in fail to restore anything. */
-async function syncNow(loud) {
-  if (!S.user || !S.user.token) return false;
-  const run = async () => {
-    try {
-      const r = await fetch(API_BASE + '/sync', {
-        method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + S.user.token },
-        body: JSON.stringify({ data: localDoc() }), signal: AbortSignal.timeout(15000),
-      });
-      const d = await r.json().catch(() => ({}));
-      if (r.ok && d.ok) { applyDoc(d.data); setSyncBadge('saved'); return true; }
-      if (r.status === 401) { signOut(true); return false; }
-      setSyncBadge('offline');
-    } catch { setSyncBadge('offline'); }
-    return false;
-  };
-  _syncChain = (_syncChain || Promise.resolve()).then(run, run);
-  return _syncChain;
-}
-/* every change nudges a debounced push, so nothing is ever lost */
-function queueSync() {
-  if (!S.user || !S.user.token) return;
-  setSyncBadge('saving');
-  clearTimeout(_syncT);
-  _syncT = setTimeout(() => syncNow(), 1200);
-}
+/* ═══════════ YOUR DATA LIVES IN THIS BROWSER ═══════════
+   No accounts, no server, nothing uploaded. Small records sit in localStorage;
+   documents (which are far too big for it) go in IndexedDB. Export/Import is the
+   backup mechanism — a single JSON file the person owns outright. */
+function signedIn() { return true; }              // every feature is open to everyone now
+function queueSync() { setSyncBadge('saved'); }   // saving is instant + local
+async function syncNow() { return true; }
 function setSyncBadge(state) {
-  const el = document.getElementById('sync-badge'); if (!el) return;
-  const map = { saving: ['Saving…', 'sb-saving'], saved: ['Saved to your account', 'sb-ok'], offline: ['Offline — saved on this device', 'sb-off'] };
-  const [txt, cls] = map[state] || map.saved;
-  el.className = 'sync-badge ' + cls; el.textContent = txt;
-  if (state === 'saved') { clearTimeout(el._t); el._t = setTimeout(() => { el.textContent = ''; el.className = 'sync-badge'; }, 2200); }
+  const els = [document.getElementById('sync-badge'), document.getElementById('dash-sync')].filter(Boolean);
+  const txt = state === 'saving' ? 'Saving…' : 'Saved on this device';
+  els.forEach((el) => {
+    el.className = 'sync-badge sb-ok'; el.textContent = txt;
+    clearTimeout(el._t); el._t = setTimeout(() => { el.textContent = ''; el.className = 'sync-badge'; }, 1800);
+  });
 }
-async function restoreSession() {
-  const u = ls('scout-user');
-  if (!u || !u.token) return false;
-  S.user = u;
-  try {
-    const r = await fetch(API_BASE + '/auth', {
-      method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + u.token },
-      body: JSON.stringify({ action: 'me' }), signal: AbortSignal.timeout(12000),
-    });
-    const d = await r.json().catch(() => ({}));
-    if (r.ok && d.ok) { S.user = { ...d.user, token: u.token, onboarded: true }; ls('scout-user', S.user); return true; }
-    // 401 = this session is genuinely dead. Anything else (503/500/network) is the
-    // server having a moment — keep the session and keep working from this device.
-    if (r.status === 401) { signOut(true); return false; }
-    setSyncBadge('offline');
-  } catch { /* offline — keep working from localStorage */ }
-  return true;
-}
-let _autoSignedOut = false;
-function signOut(silent) {
-  if (silent) {
-    // The session is no longer valid server-side. Drop the token, keep everything
-    // the person has on this device, and stay exactly where they are — a forced
-    // reload here used to throw them back to the questionnaire mid-session.
-    if (_autoSignedOut) return;
-    _autoSignedOut = true;
-    try { localStorage.removeItem('scout-user'); } catch {}
-    S.user = { name: (S.profile && S.profile.name) || (S.user && S.user.name) || 'there', onboarded: true, local: true, ts: Date.now() };
-    ls('scout-user', S.user);
-    setSyncBadge('offline');
-    toast('Signed out — everything is still saved on this device');
-    if (S.view === 'profile') renderProfile();
-    return;
-  }
-  try { localStorage.removeItem('scout-user'); } catch {}
-  try { ['scout-pipe','scout-saved','scout-kit','scout-accounts','scout-threads','scout-master','scout-docsidx','scout-feed-cache'].forEach((k) => localStorage.removeItem(k)); } catch {}
+function resetDevice() {
+  if (!confirm('This clears your profile, saves, drafts and documents from this browser. Export first if you want a backup. Continue?')) return;
+  try { ['scout-user','scout-profile','scout-pipe','scout-saved','scout-kit','scout-accounts','scout-threads','scout-master','scout-docsidx','scout-feed-cache','scout-notifs','scout-reminders','scout-agentlog','scout-acts','scout-recent','scout-streak','scout-scope'].forEach((k) => localStorage.removeItem(k)); } catch {}
+  idbClear();
   location.reload();
+}
+const signOut = resetDevice;
+
+/* ————— IndexedDB: where documents actually live ————— */
+const IDB_NAME = 'scout-docs', IDB_STORE = 'files';
+function idb() {
+  return new Promise((res, rej) => {
+    const r = indexedDB.open(IDB_NAME, 1);
+    r.onupgradeneeded = () => { if (!r.result.objectStoreNames.contains(IDB_STORE)) r.result.createObjectStore(IDB_STORE); };
+    r.onsuccess = () => res(r.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+async function idbPut(key, val) {
+  const db = await idb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).put(val, key);
+    tx.oncomplete = () => res(true); tx.onerror = () => rej(tx.error);
+  });
+}
+async function idbGet(key) {
+  const db = await idb();
+  return new Promise((res) => {
+    const rq = db.transaction(IDB_STORE, 'readonly').objectStore(IDB_STORE).get(key);
+    rq.onsuccess = () => res(rq.result || null); rq.onerror = () => res(null);
+  });
+}
+async function idbDel(key) {
+  const db = await idb();
+  return new Promise((res) => {
+    const tx = db.transaction(IDB_STORE, 'readwrite');
+    tx.objectStore(IDB_STORE).delete(key);
+    tx.oncomplete = () => res(true); tx.onerror = () => res(false);
+  });
+}
+async function idbClear() { try { const db = await idb(); db.transaction(IDB_STORE, 'readwrite').objectStore(IDB_STORE).clear(); } catch {} }
+
+/* ————— export / import: the backup that replaces an account ————— */
+const BACKUP_KEYS = ['scout-profile', 'scout-master', 'scout-pipe', 'scout-saved', 'scout-kit', 'scout-accounts', 'scout-threads', 'scout-notifs', 'scout-reminders', 'scout-acts', 'scout-streak', 'scout-user', 'scout-docsidx'];
+async function exportData() {
+  toast('Packing everything up…');
+  const bundle = { app: 'scout', version: 1, exportedAt: new Date().toISOString(), data: {}, docs: {} };
+  BACKUP_KEYS.forEach((k) => { const v = ls(k); if (v !== null && v !== undefined) bundle.data[k] = v; });
+  // documents live in IndexedDB, so a backup that skipped them would be a lie
+  for (const slot of Object.keys(ls('scout-docsidx') || {})) {
+    const doc = await idbGet('doc:' + slot);
+    if (doc) bundle.docs[slot] = doc;
+  }
+  const blob = new Blob([JSON.stringify(bundle)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `scout-backup-${new Date().toISOString().slice(0, 10)}.json`;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+  const n = Object.keys(bundle.docs).length;
+  toast(`Backup downloaded${n ? ` — including ${n} document${n === 1 ? '' : 's'}` : ''}. Keep it somewhere safe.`);
+}
+async function importData(input) {
+  const f = input.files && input.files[0]; if (!f) return;
+  try {
+    const bundle = JSON.parse(await f.text());
+    if (!bundle || bundle.app !== 'scout' || !bundle.data) throw new Error('That is not a Scout backup');
+    Object.entries(bundle.data).forEach(([k, v]) => ls(k, v));
+    for (const [slot, doc] of Object.entries(bundle.docs || {})) await idbPut('doc:' + slot, doc);
+    toast('Restored — reloading');
+    setTimeout(() => location.reload(), 700);
+  } catch (e) { toast(String(e.message || e)); }
+  finally { input.value = ''; }
 }
 
 /* ═══════════ DATA ═══════════ */
@@ -746,7 +630,7 @@ async function enterApp() {
   renderNav();
   renderTabbar();
   // signed-in users get their workspace one click away
-  if (signedIn() && !document.getElementById('dash-btn')) {
+  if (!document.getElementById('dash-btn')) {
     const orb = document.querySelector('.icbtn.agent-orb');
     if (orb) orb.insertAdjacentHTML('beforebegin', `<button class="icbtn" id="dash-btn" data-ic="grid" onclick="openDash()" aria-label="Dashboard" title="Your dashboard"></button>`);
     hydrateIcons(document.querySelector('.top-right'));
@@ -1632,7 +1516,6 @@ function scOverview() {
     ${!(S.user && S.user.email) && (c.draft + c.applied) >= 1 ? `<section class="sc-nudge rv">
       <div><div class="sn-t">${ic('bookmark', 14)} This all lives in one browser</div>
       <div class="sn-s">${c.draft + c.applied} ${c.draft + c.applied === 1 ? 'application' : 'applications'} of real work. An account keeps it if this device doesn't.</div></div>
-      <button class="pill pill-dark" onclick="openSignup()">Create account</button>
     </section>` : ''}
 
     <section class="sc-act rv">
@@ -2991,13 +2874,33 @@ function admLogo(c) {
 const ADM_STAGES = [['all', 'All'], ['ug', 'Undergrad'], ['pg', 'Postgrad'], ['mba', 'MBA'], ['exec', 'Executive'], ['online-degree', 'Online degrees'], ['upskill', 'Upskilling'], ['school', 'School']];
 const ADM_REGIONS = [['all', 'Everywhere'], ['india', 'India'], ['us', 'US'], ['uk', 'UK'], ['europe', 'Europe'], ['global', 'Global'], ['online', 'Online']];
 const ADM_DEFAULT_STAGE = { school: 'ug', ug: 'pg', pg: 'mba', phd: 'all', work: 'exec' };
+/* A researched date can read "expected 2026-10-31" or "2026-08-01 (confirmed…)" —
+   pull the ISO date out of whatever prose surrounds it. */
+function admDate(v) {
+  const m = String(v || '').match(/(\d{4})-(\d{2})-(\d{2})/);
+  return m ? Date.parse(m[0] + 'T23:59:59Z') : null;
+}
 async function loadAdmissions() {
   if (ADM.length) return true;
   try {
-    const r = await fetch(`${API_BASE}/admissions`, { signal: AbortSignal.timeout(15000) });
+    // Static, versioned with the app — no function invocation, works offline via the SW.
+    const r = await fetch('/data/admissions.json', { signal: AbortSignal.timeout(15000) });
     const d = await r.json();
     if (d.ok) {
-      ADM = d.cycles || [];
+      // The file's open_now/days_* were computed the day it was written. Recompute
+      // against today so a cycle never claims to be open a month after it closed.
+      const now = Date.now(), DAY = 864e5;
+      ADM = (d.cycles || []).map((c) => {
+        const o = admDate(c.window_open), x = admDate(c.window_close);
+        return {
+          ...c,
+          // both dates known → the window decides. Otherwise only the research
+          // note may call it open; silence is never treated as "apply today".
+          open_now: (o && x) ? (now >= o && now <= x) : /VERIFIED-OPEN/i.test(c.status_note || ''),
+          days_to_close: x ? Math.ceil((x - now) / DAY) : null,
+          days_to_open: o && now < o ? Math.ceil((o - now) / DAY) : null,
+        };
+      }).filter((c) => c.days_to_close === null || c.days_to_close > -14);
       ADM_MAP = {}; ADM.forEach((c) => { ADM_MAP[c.id] = admToOpp(c); });
       return true;
     }
@@ -3250,11 +3153,11 @@ async function attachChatFiles(input) {
       if (/^text\/|json|csv|markdown/.test(f.type) || /\.(txt|md|csv|json|tex)$/i.test(f.name)) {
         entry.text = (await f.text()).slice(0, 6000);
         entry.note = Math.round(f.size / 1024) + 'KB text';
-      } else if (/^image\//.test(f.type) && signedIn()) {
+      } else if (/^image\//.test(f.type)) {
         entry.note = 'reading…';
         S.chatFiles.push(entry); renderChatFiles();
         const fit = await fitImage(f, { maxW: 1400, maxKB: 400, mime: 'image/jpeg' });
-        const r = await fetch(API_BASE + '/extract', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + S.user.token }, body: JSON.stringify({ data: fit.blobB64, mime: fit.mime }), signal: AbortSignal.timeout(60000) });
+        const r = await fetch(API_BASE + '/extract', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ data: fit.blobB64, mime: fit.mime }), signal: AbortSignal.timeout(60000) });
         const d = await r.json();
         entry.text = d.ok ? JSON.stringify(d.fields).slice(0, 2500) : '';
         entry.note = d.ok ? 'read by Scout' : 'image (unreadable)';
@@ -3299,12 +3202,11 @@ async function connectLink(platform, url) {
   url = String(url || '').trim();
   if (!url) return toast('Paste the link first');
   if (!/^https?:\/\//.test(url)) url = 'https://' + url;
-  if (!signedIn()) { toast('Connecting links needs an account'); openSignup(); return; }
   if (platform === 'github' || /github\.com\/[^/]+\/?$/.test(url)) return connectGitHub(url);
   toast('Scout is reading it…');
   try {
     const r = await fetch(API_BASE + '/enrich', {
-      method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + S.user.token },
+      method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ url, platform }), signal: AbortSignal.timeout(45000),
     });
     const d = await r.json();
@@ -3325,8 +3227,7 @@ function linksPanelHTML() {
   const links = S.master.links || [];
   return `<div class="psec" id="ps-links"><h3>Links & portfolios</h3>
     <p class="psec-sub">Paste anything public — Scout reads it, works out what it proves, and cites it in applications. The more you connect, the sharper every draft.</p>
-    ${signedIn() ? `
-    <div class="lk-add">
+        <div class="lk-add">
       <select id="lk-platform">${platformsForUser().map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>
       <input id="lk-url" placeholder="Paste the link…" onkeydown="if(event.key==='Enter')connectLink(document.getElementById('lk-platform').value,this.value)">
       <button class="pill pill-dark" onclick="connectLink(document.getElementById('lk-platform').value,document.getElementById('lk-url').value)">${ic('link', 14)} Connect</button>
@@ -3336,8 +3237,7 @@ function linksPanelHTML() {
         <span class="aps-i">${ic(l.platform === 'youtube' ? 'send' : l.platform === 'drive' ? 'doc' : 'link', 14)}</span>
         <div class="lk-m"><b>${esc(l.title || l.url)}</b><i>${esc(l.kind || l.platform)}${l.summary ? ' — ' + esc(l.summary.slice(0, 90)) : ''}</i></div>
         <button class="aps-x" onclick="removeLink('${esc(l.url)}')" aria-label="Remove">${ic('x', 13)}</button>
-      </div>`).join('')}</div>` : ''}`
-    : `<div class="locked-card">${ic('link', 18)}<div><b>Connect GitHub, Behance, YouTube, your portfolio…</b><i>Scout reads what you've made and writes applications that cite real work. Needs an account to keep it.</i></div><button class="pill pill-dark" onclick="openSignup()">Create your account</button></div>`}
+      </div>`).join('')}</div>` : ''}
   </div>`;
 }
 
@@ -3463,21 +3363,16 @@ function docSpec(slot) { return DOC_SPECS[slot] || { maxW: 1600, maxKB: 400, mim
 function addCert(input) { uploadDoc('cert-' + Date.now(), input); }
 async function uploadDoc(slot, input) {
   const file = input.files && input.files[0]; if (!file) return;
-  if (!S.user || !S.user.token || S.user.local) { toast('Create an account first — documents need a place to live'); goV('profile', { scrollTo: '#ps-acct' }); return; }
   const cell = document.getElementById('doc-' + slot);
   if (cell) cell.classList.add('busy');
   try {
     const spec = docSpec(slot);
     toast('Preparing ' + docLabel(slot).toLowerCase() + '…');
     const fit = await fitImage(file, spec);
-    const r = await fetch(API_BASE + '/docs', {
-      method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + S.user.token },
-      body: JSON.stringify({ action: 'put', slot, name: file.name, mime: fit.mime, data: fit.blobB64 }), signal: AbortSignal.timeout(45000),
-    });
-    const d = await r.json();
-    if (!r.ok || !d.ok) throw new Error(d.error || 'upload failed');
-    S.docsIdx = d.slots || {}; ls('scout-docsidx', S.docsIdx);
-    toast(`Saved — ${fit.note}`);
+    await idbPut('doc:' + slot, { name: file.name, mime: fit.mime, data: fit.blobB64, ts: Date.now() });
+    S.docsIdx[slot] = { name: String(file.name).slice(0, 80), mime: fit.mime, bytes: fit.bytes, ts: Date.now() };
+    ls('scout-docsidx', S.docsIdx);
+    toast(`Saved on this device — ${fit.note}`);
     // every readable document gets read: marksheets fill your academics,
     // certificates get classified and become ammunition for applications
     if (/^image\//.test(fit.mime) && !/^(photo|signature)$/.test(slot)) extractDoc(slot, fit);
@@ -3489,7 +3384,7 @@ async function extractDoc(slot, fit) {
   toast('Scout is reading it…');
   try {
     const r = await fetch(API_BASE + '/extract', {
-      method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + S.user.token },
+      method: 'POST', headers: { 'content-type': 'application/json' },
       body: JSON.stringify({ data: fit.blobB64, mime: fit.mime }), signal: AbortSignal.timeout(60000),
     });
     const d = await r.json();
@@ -3505,41 +3400,29 @@ async function extractDoc(slot, fit) {
     if (f.kind || f.summary) {
       S.docsIdx[slot] = { ...(S.docsIdx[slot] || {}), kind: f.kind || '', summary: f.summary || '' };
       ls('scout-docsidx', S.docsIdx);
-      fetch(API_BASE + '/docs', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + S.user.token }, body: JSON.stringify({ action: 'meta', slot, kind: f.kind, summary: f.summary }) }).catch(() => {});
       const certs = (S.master.certs || []).filter((x) => x.slot !== slot);
       certs.push({ slot, kind: f.kind || 'certificate', summary: f.summary || '' });
-      S.master.certs = certs.slice(-40); ls('scout-master', S.master); queueSync(); invalidateUV();
+      S.master.certs = certs.slice(-40); ls('scout-master', S.master); invalidateUV();
     }
-    if (applied.length) { ls('scout-master', m); queueSync(); renderProfile(); toast(`Read it — filled ${applied.length} field${applied.length === 1 ? '' : 's'} from the document`); springPop(document.getElementById('ps-master')); }
+    if (applied.length) { ls('scout-master', m); renderProfile(); toast(`Read it — filled ${applied.length} field${applied.length === 1 ? '' : 's'} from the document`); springPop(document.getElementById('ps-master')); }
     else if (f.kind || f.summary) { renderProfile(); toast(`Read it — filed as “${f.kind || 'certificate'}”`); }
     else toast('Read it — nothing new to fill');
   } catch (e) { toast('Could not read the document: ' + String(e.message || e)); }
 }
 async function deleteDoc(slot) {
-  if (!S.user || !S.user.token) return;
-  const r = await fetch(API_BASE + '/docs', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + S.user.token }, body: JSON.stringify({ action: 'del', slot }) });
-  const d = await r.json();
-  if (d.ok) { S.docsIdx = d.slots || {}; ls('scout-docsidx', S.docsIdx); renderProfile(); toast('Removed'); }
+  await idbDel('doc:' + slot);
+  delete S.docsIdx[slot]; ls('scout-docsidx', S.docsIdx);
+  renderProfile(); toast('Removed');
 }
 async function downloadDoc(slot) {
-  if (!S.user || !S.user.token) return;
-  toast('Fetching…');
-  const r = await fetch(API_BASE + '/docs', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + S.user.token }, body: JSON.stringify({ action: 'get', slot }) });
-  const d = await r.json();
-  if (!d.ok) return toast(d.error || 'not found');
+  const doc = await idbGet('doc:' + slot);
+  if (!doc) return toast('That document is no longer on this device');
   const a = document.createElement('a');
-  a.href = `data:${d.doc.mime};base64,${d.doc.data}`;
-  a.download = d.doc.name || slot;
+  a.href = `data:${doc.mime};base64,${doc.data}`;
+  a.download = doc.name || slot;
   a.click();
 }
-async function refreshDocs() {
-  if (!S.user || !S.user.token || S.user.local) return;
-  try {
-    const r = await fetch(API_BASE + '/docs', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + S.user.token }, body: JSON.stringify({ action: 'list' }), signal: AbortSignal.timeout(12000) });
-    const d = await r.json();
-    if (d.ok) { S.docsIdx = d.slots || {}; ls('scout-docsidx', S.docsIdx); }
-  } catch { /* offline */ }
-}
+async function refreshDocs() { /* documents are local — the index in localStorage is the truth */ }
 /* essay drafting straight from everything Scout knows */
 async function draftEssay(key, max) {
   if (!AI_ENABLED) return soon();
@@ -3617,8 +3500,8 @@ function renderProfile() {
       </div>`).join('')}
     </div>
 
-    ${signedIn() ? `<div class="psec" id="ps-docs"><h3>Documents</h3>
-      <p class="psec-sub">Uploaded once, auto-fitted to what each form demands (size, format, dimensions), encrypted before storage. Marksheets are read by Scout to fill your academics.</p>
+    <div class="psec" id="ps-docs"><h3>Documents</h3>
+      <p class="psec-sub">Uploaded once, auto-fitted to what each form demands (size, format, dimensions), and kept in this browser only — nothing is uploaded anywhere. Marksheets are read by Scout to fill your academics.</p>
       <div class="doc-grid">${[...Object.keys(DOC_LABELS), ...Object.keys(S.docsIdx || {}).filter((s) => /^cert-/.test(s))].map((slot) => { const have = (S.docsIdx || {})[slot]; return `
         <div class="doc-cell ${have ? 'have' : ''}" id="doc-${slot}">
           <div class="dc-top">${ic(have ? 'check' : 'upload', 16)}<b>${esc(docLabel(slot))}</b></div>
@@ -3632,10 +3515,7 @@ function renderProfile() {
           <i class="dc-spec">Awards, NCC/NSS, sports, languages, anything — Scout reads, classifies and uses it</i>
           <input type="file" accept="image/*,.pdf" hidden onchange="addCert(this)">
         </label></div>
-    </div>` : `<div class="psec" id="ps-docs"><h3>Documents</h3>
-      <div class="locked-card">${ic('shield', 18)}<div><b>Documents live in your account</b><i>Marksheets and certificates are encrypted, read by Scout, and reused across every application — but they need somewhere safe to live first.</i></div>
-      <button class="pill pill-dark" onclick="openSignup()">Create your account</button></div>
-    </div>`}
+    </div>
 
     <div class="psec"><h3>Opportunity passport</h3>
       ${[['Role', roleLabel], ['Institution', p.institution || '—'], ['Year', p.gradYear || '—'], ['CGPA', p.cgpa || '—'], ['City', p.city || '—'], ['Open to', ({ india: 'India only', abroad: 'Abroad', remote: 'Remote', any: 'Anywhere' })[p.geo] || '—'], ['Goal', ((GOALS.find((g) => g.v === p.goal) || {}).t) || '—']].map(([k, v]) => `<div class="prow"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`).join('')}
@@ -3646,7 +3526,6 @@ function renderProfile() {
       <div class="prow"><span class="k">Daily match digest</span><div class="tog ${p.digest ? 'on' : ''}" onclick="S.profile.digest=!S.profile.digest;ls('scout-profile',S.profile);renderProfile()"><i></i></div></div>
       <div class="prow"><span class="k">WhatsApp nudges</span><span class="v">${ls('scout-whatsapp') ? 'On · ' + esc((ls('scout-whatsapp') || {}).phone || '') : '<b style="cursor:pointer" onclick="enableWhatsApp()">Enable</b>'}</span></div>
     </div>
-    ${signedIn() ? '' : `<style>#ps-ext .ext-row .pill-ghost{display:none}</style>`}
     <div class="psec"><h3>Connected accounts</h3>
       <div class="prow"><span class="k">GitHub</span><span class="v">${S.accounts.github
         ? `@${esc(S.accounts.github.handle)} · ${S.accounts.github.publicRepos} repos <b style="cursor:pointer;color:var(--ink3)" onclick="disconnectAcct('github')">Disconnect</b>`
@@ -3662,19 +3541,17 @@ function renderProfile() {
       <ol class="ext-steps"><li>Download and unzip</li><li>chrome://extensions → Developer mode → Load unpacked → pick the folder</li><li>On any form: click the Scout heart → Fill</li></ol>
     </div>
 
-    <div class="psec" id="ps-acct"><h3>Account</h3>
-      ${S.user && S.user.token && !S.user.local
-        ? `<div class="acct-row"><span class="acct-ic">${ic('mail', 16)}</span>
-             <span class="acct-tx"><b>${esc(S.user.email)}</b><i>Signed in${S.user.createdAt ? ' · member since ' + new Date(S.user.createdAt).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : ''}</i></span>
-             ${S.user.verified ? `<span class="acct-badge">${esc(S.user.institution || 'Student')} ✓</span>` : ''}
-           </div>
-           <div class="acct-row"><span class="acct-ic">${ic('check', 16)}</span>
-             <span class="acct-tx"><b>Everything is saved to your account</b><i>Encrypted before storage — profile, ${pipeCounts().saved + pipeCounts().draft + pipeCounts().applied + pipeCounts().result} tracked ${pipeCounts().saved + pipeCounts().draft + pipeCounts().applied + pipeCounts().result === 1 ? 'opportunity' : 'opportunities'}, drafts and chats</i></span>
-             <button class="pill pill-ghost pill-sm" onclick="syncNow(true).then(o=>toast(o?'Everything is up to date':'Could not reach the server'))">Sync now</button>
-           </div>`
-        : `<div class="acct-nudge"><div class="an-t">No account yet</div><div class="an-s">Everything — profile, ${pipeCounts().saved} saved, ${pipeCounts().draft} draft${pipeCounts().draft === 1 ? '' : 's'} — lives in this browser only. An account carries it to your phone and keeps it if you clear your history.</div><button class="pill pill-dark" onclick="openSignup()">${ic('user', 14)} Create your account</button></div>`}
+    <div class="psec" id="ps-acct"><h3>Your data</h3>
+      <div class="acct-row"><span class="acct-ic">${ic('shield', 16)}</span>
+        <span class="acct-tx"><b>Everything lives in this browser</b><i>Profile, documents, ${pipeCounts().saved + pipeCounts().draft + pipeCounts().applied + pipeCounts().result} tracked ${pipeCounts().saved + pipeCounts().draft + pipeCounts().applied + pipeCounts().result === 1 ? 'opportunity' : 'opportunities'}, drafts and chats — on this device, never uploaded, no account needed.</i></span>
+      </div>
+      <p class="psec-sub">Clearing your browsing data clears Scout too. Export a backup file and you can carry everything to another device — or bring it back.</p>
+      <div class="ext-row">
+        <button class="pill pill-dark" onclick="exportData()">${ic('download', 14)} Export a backup</button>
+        <label class="pill pill-ghost" style="cursor:pointer">${ic('upload', 14)} Import a backup<input type="file" accept="application/json,.json" hidden onchange="importData(this)"></label>
+      </div>
     </div>
-    <button class="signout" onclick="signOut()">${S.user && S.user.token && !S.user.local ? 'Sign out' : 'Reset this device'}</button>
+    <button class="signout" onclick="resetDevice()">Reset this device</button>
   </div>`;
   hydrateIcons(el);
   animateIn(el);
@@ -3894,7 +3771,6 @@ function paintStateDot() {
 function reminders() { return ls('scout-reminders') || []; }
 function hasReminder(oppId) { return reminders().some((r) => r.oppId === String(oppId) && !r.done); }
 async function setReminder(oppId, kind) {
-  if (!signedIn()) { toast('Reminders need an account — everything else works without one'); openSignup(); return; }
   const o = resolveOpp(oppId); if (!o) return;
   let due = null, label = '';
   if (kind === 'opens') {
@@ -3960,7 +3836,6 @@ function atRiskItems() {
     return { ...p, _risk: `closes in ${dl}d · draft ${p.pct || 0}% done` };
   });
 }
-function signedIn() { return !!(S.user && S.user.token && !S.user.local); }
 
 /* ————— the screen ————— */
 const DASH_SECTIONS = [
@@ -3974,7 +3849,6 @@ const DASH_SECTIONS = [
   ['chat', 'Scout AI', 'orb'],
 ];
 function openDash(sec) {
-  if (!signedIn()) { toast('The dashboard unlocks with an account — it is where your applications live'); openSignup(); return; }
   S.dashSec = sec || S.dashSec || 'paths';
   show('dash');
   renderDashNav();
@@ -4141,6 +4015,7 @@ function dashDossier() {
         <button class="dos-card" onclick="closeDash();S.mpOpen='${sec.id}';goV('profile',{scrollTo:'#ps-master'})">
           ${ic(sec.icn, 16)}<b>${sec.t}</b><i>${filled}/${sec.fields.length} filled</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>`; }).join('')}
       <button class="dos-card" onclick="closeDash();goV('profile',{scrollTo:'#ps-essays'})">${ic('pen', 16)}<b>Essay bank</b><i>${mc.essays}/${ESSAY_BANK.length} written</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
+      <button class="dos-card" onclick="closeDash();goV('profile',{scrollTo:'#ps-acct'})">${ic('shield', 16)}<b>Your data</b><i>On this device · backup &amp; restore</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
       <button class="dos-card" onclick="closeDash();goV('profile',{scrollTo:'#ps-docs'})">${ic('upload', 16)}<b>Documents</b><i>${docs.length} on file${docs.length ? ' · ' + docs.filter(([, d]) => d.kind).length + ' AI-classified' : ''}</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
     </div>
     ${docs.length ? `<div class="q-grp" style="margin-top:26px">What your documents prove</div>
@@ -4191,10 +4066,7 @@ function init() {
   const user = ls('scout-user');
   document.querySelectorAll('.brand-heart').forEach((h) => { h.innerHTML = heartSVG(); });
   hydrateIcons();
-  if (user && user.token) {
-    S.user = user; enterApp();
-    restoreSession().then((ok) => { if (ok) { syncNow(); refreshDocs(); } });   // verify + merge the cloud copy
-  } else if (user) { S.user = user; enterApp(); }               // pre-account local session
+  if (user) { S.user = user; enterApp(); }
   else { show('onb'); renderOnb(); }
   initShaderBG();
   initCursor();
@@ -4353,11 +4225,11 @@ function menuContent(v) {
   if (v === 'account') {
     const nm = (S.user && S.user.name) || 'You';
     return `<div class="menu-col"><div class="menu-h">${esc(nm.split(' ')[0])}</div>
-      ${signedIn() ? `<button class="menu-it" onclick="openDash()"><span class="mic">${ic('grid', 15)}</span>Dashboard</button>` : ''}
+      <button class="menu-it" onclick="openDash()"><span class="mic">${ic('grid', 15)}</span>Dashboard</button>
       <button class="menu-it" onclick="goV('profile')"><span class="mic">${ic('user', 15)}</span>My profile</button>
       <button class="menu-it" onclick="goV('scouted')"><span class="mic">${ic('bookmark', 15)}</span>My pipeline</button>
       <button class="menu-it" onclick="goV('profile',{scrollTo:'#ps-ext'})"><span class="mic">${ic('download', 15)}</span>Autofill extension</button>
-      <button class="menu-it" onclick="signOut()"><span class="mic">${ic('x', 15)}</span>${S.user && S.user.token && !S.user.local ? 'Sign out' : 'Reset device'}</button></div>`;
+      <button class="menu-it" onclick="resetDevice()"><span class="mic">${ic('x', 15)}</span>Reset device</button></div>`;
   }
   if (v === 'scouted') return scoutedMenuHTML();
   const cnt = (t) => DATA.filter((o) => o.type === t && o.days_left > 0).length;

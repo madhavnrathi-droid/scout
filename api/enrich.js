@@ -3,7 +3,6 @@
 // Drive file, blog…) into application-ready context: what it is, what it proves,
 // and the highlights worth citing. Fetch → platform-aware extraction → LLM read.
 // LinkedIn is auth-walled and is stored honestly as a URL-only credential.
-import { sessionFrom } from './_lib/auth.js';
 import { callLLM } from './_lib/llm.js';
 
 const MAX_BYTES = 600e3;
@@ -59,7 +58,6 @@ export default async function handler(req, res) {
   res.setHeader('access-control-allow-headers', 'content-type, authorization');
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-  if (!sessionFrom(req)) return res.status(401).json({ error: 'not signed in' });
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body || '{}') : (req.body || {});
   let { url, platform } = body;
