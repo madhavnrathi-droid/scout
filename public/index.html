@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://images.unsplash.com">
 <link rel="preconnect" href="https://d8it4huxumps7.cloudfront.net">
 <link href="https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/scout.css?v=33">
+<link rel="stylesheet" href="/scout.css?v=34">
 <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
 </head>
 <body>
@@ -52,11 +52,11 @@
     <aside class="dash-nav" id="dash-nav"></aside>
     <div class="dash-main">
       <header class="dash-top">
-        <div class="dash-crumb" id="dash-crumb"></div>
-        <div class="dash-top-right">
-          <span class="sync-badge" id="dash-sync"></span>
+        <div class="dash-top-left">
           <button class="icbtn" data-ic="arrow-left" id="dash-back" onclick="closeDash()" aria-label="Back to opportunities" title="Back to opportunities"></button>
+          <div class="dash-crumb" id="dash-crumb"></div>
         </div>
+        <span class="sync-badge" id="dash-sync"></span>
       </header>
       <div class="dash-body" id="dash-body"></div>
     </div>
@@ -118,7 +118,7 @@
   </section>
 </div>
 
-<script src="/scout.js?v=33" defer></script>
+<script src="/scout.js?v=34" defer></script>
 <script>
 if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => { navigator.serviceWorker.register('/sw.js').catch(() => {}); });

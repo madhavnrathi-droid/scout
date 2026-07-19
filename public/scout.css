@@ -1579,3 +1579,25 @@ body.has-cursor .cursor{display:block}
 .dash-cards{grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
 .tool-on{background:color-mix(in srgb,var(--green-deep) 10%,#fff);color:var(--green-deep)}
 @media(max-width:900px){.dash-nav{display:none}#dash-back{transform:none}}
+
+/* v34 — states, links, attachments */
+.locked-card{display:flex;align-items:center;gap:16px;padding:20px;border:1.5px dashed var(--hair);border-radius:16px}
+.locked-card>svg{color:var(--ink3);flex-shrink:0}
+.locked-card b{font-size:14px;display:block}
+.locked-card i{font-style:normal;font-size:12.5px;color:var(--ink2);line-height:1.55;display:block;margin-top:3px;max-width:52ch}
+.locked-card .pill{margin-left:auto;flex-shrink:0}
+.lk-add{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.lk-add select{padding:12px 13px;border-radius:12px;border:1px solid var(--hair);background:var(--card);font:inherit;font-size:13px;outline:none}
+.lk-add input{flex:1;min-width:220px;padding:12px 14px;border-radius:12px;border:1px solid var(--hair);background:var(--card);font:inherit;font-size:13.5px;outline:none}
+.lk-add input:focus{border-color:var(--ink)}
+.lk-list{display:flex;flex-direction:column;gap:8px}
+.lk-row{display:flex;align-items:center;gap:11px;padding:11px 13px;background:var(--card);border-radius:13px;box-shadow:var(--sh-xs)}
+.lk-m{flex:1;min-width:0}
+.lk-m b{font-size:13px;font-weight:600;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lk-m i{font-style:normal;font-size:11.5px;color:var(--ink2);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cmp-files{display:flex;flex-wrap:wrap;gap:6px;padding:8px 8px 0}
+.cf-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;padding:6px 10px;border-radius:var(--r-pill);background:var(--canvas);color:var(--ink)}
+.cf-chip i{font-style:normal;font-weight:400;color:var(--ink3);font-size:10px}
+.cf-chip button{display:inline-flex;color:var(--ink3)}
+.cf-chip button:hover{color:var(--red)}
+.dash-top-left{display:flex;align-items:center;gap:14px}

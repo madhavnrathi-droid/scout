@@ -140,7 +140,7 @@ let API_LIVE = false;
 let FEED_META = {};
 const S = {
   user: null, profile: {}, saved: new Set(), applied: [], pipe: {}, kit: {}, accounts: {},
-  attached: [], scope: 'feed', lastViewed: null, master: {}, docsIdx: {}, admStage: 'all', admRegion: 'all', mpOpen: 'personal', dashSec: 'paths', admField: 'all', admState: 'all', admDur: 'all', admFee: 'all', admSchol: false, admExam: null,
+  attached: [], chatFiles: [], scope: 'feed', lastViewed: null, master: {}, docsIdx: {}, admStage: 'all', admRegion: 'all', mpOpen: 'personal', dashSec: 'paths', admField: 'all', admState: 'all', admDur: 'all', admFee: 'all', admSchol: false, admExam: null,
   scView: 'overview', apply: null,
   onb: 0,
   onbData: { name: '', role: '', looking: [], domains: [], institution: '', gradYear: '', cgpa: '', city: '', geo: '', relocate: false, goal: '', reminders: true, digest: false },
@@ -815,6 +815,8 @@ function logAct(k, id) { const a = ls('scout-acts') || []; a.push({ k, id, t: Da
 /* ═══════════ NAVIGATION ═══════════ */
 const CRUMB = { home: 'For You', discover: 'Discover', admissions: 'Admissions', scouted: 'Scouted', detail: 'Listing', agent: 'Agent', apply: 'Apply', profile: 'Profile' };
 function goV(v, opts) {
+  // Profile IS the dashboard once you have an account — the workspace, not a settings page
+  if (v === 'profile' && signedIn() && !(opts && (opts.forceProfile || opts.scrollTo))) return openDash(S.dashSec || 'dossier');
   if (v === 'agent' && !AI_ENABLED) return soon();
   S.view = v;
   stopCountdown();
@@ -2239,6 +2241,7 @@ function memoryBrief(exceptId) {
   if (ma.workExYears) maBits.push(`${ma.workExYears} yrs work-ex`);
   if (maBits.length) L.push(`ACADEMIC RECORD: ${maBits.join('; ')}`);
   if (ma.activities) L.push(`ACTIVITIES: ${String(ma.activities).slice(0, 400)}`);
+  if ((ma.links || []).length) L.push(`PORTFOLIO & LINKS (real, connected by them — cite these): ${ma.links.map((l) => `[${l.kind || l.platform}] ${l.title || l.url}: ${(l.summary || '').slice(0, 160)}${(l.highlights || []).length ? ' · ' + l.highlights.slice(0, 3).join('; ') : ''}`).join(' | ').slice(0, 1100)}`);
   if ((ma.certs || []).length) L.push(`VERIFIED CERTIFICATES ON FILE (cite these; each is uploaded proof): ${ma.certs.map((c) => `[${c.kind}] ${c.summary}`).join(' | ').slice(0, 900)}`);
   if (ma.personalStatement) L.push(`THEIR OWN PERSONAL STATEMENT (their voice): ${String(ma.personalStatement).slice(0, 500)}`);
   if (m.accounts.github) {
@@ -2414,7 +2417,9 @@ function ensureAgentDOM() {
           <form class="composer" id="composer" onsubmit="event.preventDefault();sendChat()">
             <div class="cmp-ctx" id="cmp-ctx" hidden></div>
             <input id="chat-input" class="cmp-input" placeholder="Ask anything · @ to tag · / for commands" autocomplete="off" oninput="composerType(this)" onkeydown="composerNav(event,this)">
+            <div class="cmp-files" id="cmp-files" hidden></div>
             <div class="cmp-row">
+              <label class="cmp-tool" aria-label="Attach files" title="Attach files or a folder">${ic('plus', 19)}<input type="file" multiple hidden onchange="attachChatFiles(this)"></label>
               <button type="button" class="cmp-tool" onclick="insertTrigger('@')" aria-label="Tag an opportunity" title="Tag an opportunity (@)">${ic('tag', 18)}</button>
               <button type="button" class="cmp-tool" onclick="insertTrigger('/')" aria-label="Run a command" title="Run a command (/)">${ic('command', 17)}</button>
               <button type="button" class="cmp-tool" onclick="attachViewing(this)" aria-label="Tag what you were viewing" title="Tag what you were viewing">${ic('scan', 17)}</button>
@@ -2861,6 +2866,11 @@ async function sendChat() {
   const primary = S.attached[0] || (S.ctx && S.ctx.oppId) || null;
   const ctx = { ...(S.ctx || {}), oppId: primary, attached: S.attached.slice(), scope: S.scope };
   let msg = t;
+  if (S.chatFiles.length) {
+    const att = S.chatFiles.map((f) => `--- ${f.name} (${f.note}) ---\n${f.text || '(binary attachment, name/type only)'}`).join('\n');
+    msg = `[The user attached ${S.chatFiles.length} file${S.chatFiles.length === 1 ? '' : 's'}:]\n${att.slice(0, 9000)}\n\n${msg}`;
+    S.chatFiles = []; renderChatFiles();
+  }
   if (S.attached.length) {
     const names = S.attached.map((id) => { const o = resolveOpp(id); return o ? `"${o.title}" [${o.org || o.type}, ${o.days_left > 0 ? o.days_left + 'd left' : 'closed'}, tagged: ${stageOf(id) || 'saved'}]` : null; }).filter(Boolean).join('; ');
     if (names) msg = `[The user has tagged these opportunities to work on right now: ${names}. Ground your answer in them.]\n\n${t}`;
@@ -3229,6 +3239,108 @@ function openAdmission(id) {
   window.scrollTo({ top: 0 });
 }
 
+/* ————— chat attachments: drop files in, Scout reads what it can ————— */
+async function attachChatFiles(input) {
+  const files = [...(input.files || [])].slice(0, 8);
+  input.value = '';
+  for (const f of files) {
+    if (S.chatFiles.length >= 8) { toast('8 attachments max per message'); break; }
+    const entry = { name: f.name, kind: f.type || 'file', text: '', note: '' };
+    try {
+      if (/^text\/|json|csv|markdown/.test(f.type) || /\.(txt|md|csv|json|tex)$/i.test(f.name)) {
+        entry.text = (await f.text()).slice(0, 6000);
+        entry.note = Math.round(f.size / 1024) + 'KB text';
+      } else if (/^image\//.test(f.type) && signedIn()) {
+        entry.note = 'reading…';
+        S.chatFiles.push(entry); renderChatFiles();
+        const fit = await fitImage(f, { maxW: 1400, maxKB: 400, mime: 'image/jpeg' });
+        const r = await fetch(API_BASE + '/extract', { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + S.user.token }, body: JSON.stringify({ data: fit.blobB64, mime: fit.mime }), signal: AbortSignal.timeout(60000) });
+        const d = await r.json();
+        entry.text = d.ok ? JSON.stringify(d.fields).slice(0, 2500) : '';
+        entry.note = d.ok ? 'read by Scout' : 'image (unreadable)';
+        renderChatFiles(); continue;
+      } else if (/^image\//.test(f.type)) {
+        entry.note = 'image — sign in and Scout can read it';
+      } else {
+        entry.note = 'attached — Scout uses the name & type';
+      }
+    } catch { entry.note = 'could not read'; }
+    S.chatFiles.push(entry);
+  }
+  renderChatFiles();
+}
+function renderChatFiles() {
+  const box = document.getElementById('cmp-files'); if (!box) return;
+  if (!S.chatFiles.length) { box.hidden = true; box.innerHTML = ''; return; }
+  box.hidden = false;
+  box.innerHTML = S.chatFiles.map((f, i) => `<span class="cf-chip">${ic(f.text ? 'doc' : 'file', 12)}${esc(f.name.slice(0, 22))}<i>${esc(f.note)}</i><button onclick="S.chatFiles.splice(${i},1);renderChatFiles()" aria-label="Remove">${ic('x', 11)}</button></span>`).join('');
+  hydrateIcons(box);
+}
+
+/* ————— connected links: any public URL becomes application context ————— */
+const PLATFORMS = [
+  ['github', 'GitHub', 'https://github.com/', ['Engineering', 'AI/ML']],
+  ['behance', 'Behance', 'https://www.behance.net/', ['Design', 'Arts']],
+  ['dribbble', 'Dribbble', 'https://dribbble.com/', ['Design']],
+  ['youtube', 'YouTube channel', 'https://youtube.com/@', ['Arts', 'Design', 'All']],
+  ['linkedin', 'LinkedIn', 'https://www.linkedin.com/in/', ['All']],
+  ['drive', 'Google Drive file', 'https://drive.google.com/', ['All']],
+  ['portfolio', 'Portfolio site', 'https://', ['All']],
+];
+/* field-aware ordering: a designer sees Behance first, an engineer GitHub */
+function platformsForUser() {
+  const doms = (S.profile && S.profile.domains) || [];
+  return PLATFORMS.slice().sort((a, b) => {
+    const hit = (p) => p[3].some((f) => f === 'All' ? 0 : doms.includes(f)) ? 0 : 1;
+    return hit(a) - hit(b);
+  });
+}
+async function connectLink(platform, url) {
+  url = String(url || '').trim();
+  if (!url) return toast('Paste the link first');
+  if (!/^https?:\/\//.test(url)) url = 'https://' + url;
+  if (!signedIn()) { toast('Connecting links needs an account'); openSignup(); return; }
+  if (platform === 'github' || /github\.com\/[^/]+\/?$/.test(url)) return connectGitHub(url);
+  toast('Scout is reading it…');
+  try {
+    const r = await fetch(API_BASE + '/enrich', {
+      method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + S.user.token },
+      body: JSON.stringify({ url, platform }), signal: AbortSignal.timeout(45000),
+    });
+    const d = await r.json();
+    if (!r.ok || !d.ok) throw new Error(d.error || 'could not read that link');
+    const links = (S.master.links || []).filter((l) => l.url !== url);
+    links.push({ url, platform: d.platform || platform, title: d.title, kind: d.kind, summary: d.summary, highlights: d.highlights || [], ts: Date.now() });
+    S.master.links = links.slice(-20);
+    ls('scout-master', S.master); queueSync(); invalidateUV();
+    refreshCurrent();
+    toast(`Connected — “${(d.title || url).slice(0, 40)}” now feeds your applications`);
+  } catch (e) { toast(String(e.message || e)); }
+}
+function removeLink(url) {
+  S.master.links = (S.master.links || []).filter((l) => l.url !== url);
+  ls('scout-master', S.master); queueSync(); refreshCurrent();
+}
+function linksPanelHTML() {
+  const links = S.master.links || [];
+  return `<div class="psec" id="ps-links"><h3>Links & portfolios</h3>
+    <p class="psec-sub">Paste anything public — Scout reads it, works out what it proves, and cites it in applications. The more you connect, the sharper every draft.</p>
+    ${signedIn() ? `
+    <div class="lk-add">
+      <select id="lk-platform">${platformsForUser().map(([v, t]) => `<option value="${v}">${t}</option>`).join('')}</select>
+      <input id="lk-url" placeholder="Paste the link…" onkeydown="if(event.key==='Enter')connectLink(document.getElementById('lk-platform').value,this.value)">
+      <button class="pill pill-dark" onclick="connectLink(document.getElementById('lk-platform').value,document.getElementById('lk-url').value)">${ic('link', 14)} Connect</button>
+    </div>
+    ${links.length ? `<div class="lk-list">${links.map((l) => `
+      <div class="lk-row">
+        <span class="aps-i">${ic(l.platform === 'youtube' ? 'send' : l.platform === 'drive' ? 'doc' : 'link', 14)}</span>
+        <div class="lk-m"><b>${esc(l.title || l.url)}</b><i>${esc(l.kind || l.platform)}${l.summary ? ' — ' + esc(l.summary.slice(0, 90)) : ''}</i></div>
+        <button class="aps-x" onclick="removeLink('${esc(l.url)}')" aria-label="Remove">${ic('x', 13)}</button>
+      </div>`).join('')}</div>` : ''}`
+    : `<div class="locked-card">${ic('link', 18)}<div><b>Connect GitHub, Behance, YouTube, your portfolio…</b><i>Scout reads what you've made and writes applications that cite real work. Needs an account to keep it.</i></div><button class="pill pill-dark" onclick="openSignup()">Create your account</button></div>`}
+  </div>`;
+}
+
 /* the Scout Autofill extension — download + sync */
 function downloadExtension() {
   const a = document.createElement('a');
@@ -3492,6 +3604,7 @@ function renderProfile() {
       </div>`).join('')}
     </div>
 
+    ${linksPanelHTML()}
     <div class="psec" id="ps-essays"><h3>Essay bank</h3>
       <p class="psec-sub">Write (or draft) each once — Scout adapts them per application instead of starting from zero.</p>
       ${ESSAY_BANK.map(([k, lab, max, hint]) => `<div class="ap-q">
@@ -3504,7 +3617,7 @@ function renderProfile() {
       </div>`).join('')}
     </div>
 
-    <div class="psec" id="ps-docs"><h3>Documents</h3>
+    ${signedIn() ? `<div class="psec" id="ps-docs"><h3>Documents</h3>
       <p class="psec-sub">Uploaded once, auto-fitted to what each form demands (size, format, dimensions), encrypted before storage. Marksheets are read by Scout to fill your academics.</p>
       <div class="doc-grid">${[...Object.keys(DOC_LABELS), ...Object.keys(S.docsIdx || {}).filter((s) => /^cert-/.test(s))].map((slot) => { const have = (S.docsIdx || {})[slot]; return `
         <div class="doc-cell ${have ? 'have' : ''}" id="doc-${slot}">
@@ -3519,7 +3632,10 @@ function renderProfile() {
           <i class="dc-spec">Awards, NCC/NSS, sports, languages, anything — Scout reads, classifies and uses it</i>
           <input type="file" accept="image/*,.pdf" hidden onchange="addCert(this)">
         </label></div>
-    </div>
+    </div>` : `<div class="psec" id="ps-docs"><h3>Documents</h3>
+      <div class="locked-card">${ic('shield', 18)}<div><b>Documents live in your account</b><i>Marksheets and certificates are encrypted, read by Scout, and reused across every application — but they need somewhere safe to live first.</i></div>
+      <button class="pill pill-dark" onclick="openSignup()">Create your account</button></div>
+    </div>`}
 
     <div class="psec"><h3>Opportunity passport</h3>
       ${[['Role', roleLabel], ['Institution', p.institution || '—'], ['Year', p.gradYear || '—'], ['CGPA', p.cgpa || '—'], ['City', p.city || '—'], ['Open to', ({ india: 'India only', abroad: 'Abroad', remote: 'Remote', any: 'Anywhere' })[p.geo] || '—'], ['Goal', ((GOALS.find((g) => g.v === p.goal) || {}).t) || '—']].map(([k, v]) => `<div class="prow"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`).join('')}
@@ -3530,6 +3646,7 @@ function renderProfile() {
       <div class="prow"><span class="k">Daily match digest</span><div class="tog ${p.digest ? 'on' : ''}" onclick="S.profile.digest=!S.profile.digest;ls('scout-profile',S.profile);renderProfile()"><i></i></div></div>
       <div class="prow"><span class="k">WhatsApp nudges</span><span class="v">${ls('scout-whatsapp') ? 'On · ' + esc((ls('scout-whatsapp') || {}).phone || '') : '<b style="cursor:pointer" onclick="enableWhatsApp()">Enable</b>'}</span></div>
     </div>
+    ${signedIn() ? '' : `<style>#ps-ext .ext-row .pill-ghost{display:none}</style>`}
     <div class="psec"><h3>Connected accounts</h3>
       <div class="prow"><span class="k">GitHub</span><span class="v">${S.accounts.github
         ? `@${esc(S.accounts.github.handle)} · ${S.accounts.github.publicRepos} repos <b style="cursor:pointer;color:var(--ink3)" onclick="disconnectAcct('github')">Disconnect</b>`
