@@ -1495,7 +1495,12 @@ body.has-cursor .cursor{display:block}
 .dash-crumb em{font-style:normal;margin:0 7px}
 .dash-crumb b{color:var(--ink);font-weight:600}
 .dash-top-right{display:flex;align-items:center;gap:12px}
-#dash-back{background:var(--card);box-shadow:var(--sh-xs);transform:rotate(180deg)}
+/* the way out of the dashboard. It was an arrow-left rotated 180deg — i.e. pointing
+   right — on a near-canvas background, which read as "forward" and vanished. */
+#dash-back{display:inline-flex;align-items:center;gap:8px;width:auto;height:36px;padding:0 14px 0 11px;border-radius:99px;background:var(--ink);color:var(--card);box-shadow:var(--sh-sm);font-size:12.5px;font-weight:500;letter-spacing:-.01em;transition:transform .16s cubic-bezier(.2,.8,.3,1),opacity .16s}
+#dash-back .ic{stroke:currentColor}
+#dash-back span{white-space:nowrap}
+#dash-back:hover{transform:translateX(-2px);opacity:.88}
 .dash-body{flex:1;padding:6px clamp(22px,3.5vw,44px) 60px;max-width:1060px;width:100%}
 .dash-h{font-size:clamp(26px,2.6vw,34px);font-weight:400;letter-spacing:-.028em}
 .dash-sub{font-size:13.5px;color:var(--ink2);margin:6px 0 22px;line-height:1.6}
