@@ -1544,7 +1544,8 @@ body.has-cursor .cursor{display:block}
 .tt-pct{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink2)}
 .ttp-bar{flex:1;height:4px;border-radius:2px;background:var(--hair2);overflow:hidden;min-width:44px}
 .ttp-bar b{display:block;height:100%;background:var(--ink)}
-.tt-risk em{font-style:normal;font-size:10.5px;font-weight:700;color:var(--red)}
+.tt-risk em{font-style:normal;font-size:12px;font-weight:600;color:var(--red-deep)}
+.tt-risk em::before{content:'● ';font-size:8px;vertical-align:1px}
 .tt-ts{font-size:11px;color:var(--ink3);text-align:right}
 /* queue + notifs */
 .q-grp{font-size:10.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin:18px 0 8px}
@@ -1718,3 +1719,76 @@ body.has-cursor .cursor{display:block}
 .td-demo b{display:block;font-size:13px}
 .td-demo i{display:block;font-style:normal;font-size:11.5px;color:var(--ink3);margin-top:2px}
 .td-demo>div{flex:1}
+
+/* ═══════════ DASHBOARD v3 — three sections, consequence-ranked ═══════════ */
+.td-bucket{font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin:20px 0 8px}
+.td-list>.td-bucket:first-child{margin-top:0}
+/* colour is never the only severity channel — bucket headings and rule weight carry it too */
+.td-row.sev-hot{border-left-color:var(--red);background:color-mix(in srgb,var(--red) 4%,var(--card))}
+.td-row.sev-warm{border-left-color:#B8791F}
+.td-row .td-m i{color:var(--ink2)}
+.td-row.sev-hot .td-m i{color:#B3260F;font-weight:500}
+.td-later{margin-top:26px;border-top:1px solid var(--hair2);padding-top:14px}
+.td-later summary{cursor:pointer;font-size:12.5px;color:var(--ink2);list-style:none}
+.td-later summary::-webkit-details-marker{display:none}
+.td-later summary::before{content:'▸ ';color:var(--ink3)}
+.td-later[open] summary::before{content:'▾ '}
+.td-later em{font-style:normal;color:var(--ink3);margin-left:5px}
+.td-missed{display:flex;align-items:center;gap:12px;margin-top:22px;padding:13px 15px;border-radius:13px;border:1px solid var(--hair2);background:transparent}
+.td-missed>span{display:grid;place-items:center;width:26px;height:26px;border-radius:8px;background:var(--canvas);color:var(--ink3)}
+.td-missed b{display:block;font-size:13px;color:var(--ink2)}
+.td-missed i{display:block;font-style:normal;font-size:11.5px;color:var(--ink3);margin-top:2px}
+.td-missed>div{flex:1;min-width:0}
+.hd{transition:none}
+
+/* profile — four sections */
+.prof-hint{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink3);margin:0 0 22px}
+.prof-hint b{color:var(--ink);cursor:pointer;border-bottom:1px solid var(--hair2)}
+.kw.inline{display:inline-flex;flex-wrap:wrap;gap:5px;justify-content:flex-end}
+.psec-fold{margin-top:16px;border-top:1px solid var(--hair2);padding-top:14px}
+.psec-fold summary{cursor:pointer;font-size:13px;font-weight:500;list-style:none}
+.psec-fold summary::-webkit-details-marker{display:none}
+.psec-fold summary::before{content:'▸ ';color:var(--ink3);font-weight:400}
+.psec-fold[open] summary::before{content:'▾ '}
+.danger-zone{margin-top:20px;border-top:1px solid var(--hair2);padding-top:14px}
+.danger-zone summary{cursor:pointer;font-size:12.5px;color:var(--ink3);list-style:none}
+.danger-zone summary::-webkit-details-marker{display:none}
+.danger-zone summary::before{content:'▸ ';}
+.danger-zone[open] summary::before{content:'▾ ';}
+
+/* your record — history */
+.hist-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin:16px 0 22px}
+.hs{padding:13px 14px;background:var(--card);border-radius:13px;box-shadow:var(--sh-xs)}
+.hs b{display:block;font-size:22px;font-weight:400;letter-spacing:-.03em}
+.hs span{display:block;font-size:11px;color:var(--ink3);margin-top:3px}
+.hist-year{font-size:11px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink3);margin:22px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--hair2)}
+.hist-row{display:grid;grid-template-columns:62px 104px 1fr auto;gap:12px;align-items:baseline;padding:9px 2px;border-bottom:1px solid var(--hair2);font-size:13px}
+.hr-d{font-size:11.5px;color:var(--ink3);font-variant-numeric:tabular-nums}
+.hr-v{font-size:11.5px;color:var(--ink2)}
+.hist-row.applied .hr-v{color:var(--ink);font-weight:500}
+.hist-row.result .hr-v{color:#1F7A47;font-weight:500}
+.hr-t{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hr-t i{font-style:normal;color:var(--ink3)}
+.hr-o{font-size:10.5px;padding:2px 8px;border-radius:99px;background:var(--canvas);color:var(--ink2);white-space:nowrap}
+.hr-o.won{background:#DFF3E6;color:#1F7A47}
+.hr-o.rejected{color:var(--ink3)}
+@media(max-width:640px){
+  .hist-row{grid-template-columns:56px 1fr;row-gap:2px}
+  .hr-v{grid-column:2}
+  .hr-t{grid-column:2}
+  .hr-o{grid-column:2;justify-self:start;margin-top:3px}
+}
+
+/* Tracking row: the six-column grid is desktop-only. On a phone it collapses the
+   title and stacks the risk sentence into a sliver. Reflow to two rows. */
+@media(max-width:640px){
+  .tt-row{grid-template-columns:auto 1fr auto;grid-template-areas:'pill title act' 'meta meta meta';gap:6px 10px;padding:13px 4px;border-bottom:1px solid var(--hair2);border-radius:0}
+  .tt-row .stage-pill{grid-area:pill}
+  .tt-t{grid-area:title;font-size:14px}
+  .tt-act{grid-area:act;justify-self:end}
+  .tt-risk{grid-area:meta;order:1}
+  .tt-pct{grid-area:auto;display:none}      /* the % is already inside the draft risk sentence */
+  .tt-ts{display:none}                       /* the deadline chip carries the date signal */
+  .tt-risk .tt-heat{font-size:12px}
+}
+.dos-card.solo{width:100%;margin-top:28px}

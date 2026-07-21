@@ -140,7 +140,7 @@ let API_LIVE = false;
 let FEED_META = {};
 const S = {
   user: null, profile: {}, saved: new Set(), applied: [], pipe: {}, kit: {}, accounts: {},
-  attached: [], chatFiles: [], scope: 'feed', lastViewed: null, master: {}, docsIdx: {}, admStage: 'all', admRegion: 'all', mpOpen: 'personal', dashSec: 'today', trackFilter: 'live', dosOpen: 'personal', notifLim: 15, demo: false, admField: 'all', admState: 'all', admDur: 'all', admFee: 'all', admSchol: false, admExam: null,
+  attached: [], chatFiles: [], scope: 'feed', lastViewed: null, master: {}, docsIdx: {}, admStage: 'all', admRegion: 'all', dashSec: 'today', histLim: 20, trackFilter: 'live', dosOpen: 'personal', notifLim: 15, demo: false, admField: 'all', admState: 'all', admDur: 'all', admFee: 'all', admSchol: false, admExam: null,
   scView: 'overview', apply: null,
   onb: 0,
   onbData: { name: '', role: '', looking: [], domains: [], institution: '', gradYear: '', cgpa: '', city: '', geo: '', relocate: false, goal: '', reminders: true, digest: false },
@@ -685,7 +685,7 @@ function pipeSet(id, patch, o) {
   const k = String(id), prev = S.pipe[k] || {};
   const snap = (o && snapOf(o)) || prev.snap || (DATA.find((x) => String(x.id) === k) && snapOf(DATA.find((x) => String(x.id) === k)));
   S.pipe[k] = { id: k, stage: 'saved', ts: Date.now(), ...prev, ...patch, snap: snap || prev.snap };
-  ls('scout-pipe', S.pipe);
+  if (!S.demo) ls('scout-pipe', S.pipe);      // demo mode is in-memory; never let it reach disk
   invalidateUV(); queueSync();
   if (patch.stage && patch.stage !== prev.stage) logAct(patch.stage, k);
   return S.pipe[k];
@@ -721,10 +721,11 @@ function riskItems() {
     if (!p.snap || !['saved', 'draft'].includes(p.stage)) continue;
     const d = pipeDays(p); if (d == null) continue;
     const pct = p.pct || 0;
-    if (d < 0) out.push({ ...p, _d: d, _sev: 3, _risk: `closed ${Math.abs(d)}d ago — you never sent it` });
-    else if (d <= 2) out.push({ ...p, _d: d, _sev: 0, _risk: `${d === 0 ? 'closes today' : `closes in ${d}d`} · draft ${pct}% done` });
-    else if (d <= 7 && pct < 60) out.push({ ...p, _d: d, _sev: 1, _risk: `closes in ${d}d · draft ${pct}% done` });
-    else if (d <= 14 && pct === 0) out.push({ ...p, _d: d, _sev: 2, _risk: `closes in ${d}d · not started` });
+    const days = (n) => `${n} ${n === 1 ? 'day' : 'days'}`;   // never "1 days"
+    if (d < 0) out.push({ ...p, _d: d, _sev: 3, _risk: `closed ${days(Math.abs(d))} ago — you never sent it` });
+    else if (d <= 2) out.push({ ...p, _d: d, _sev: 0, _risk: `${d === 0 ? 'closes today' : `closes in ${days(d)}`} · draft ${pct}% done` });
+    else if (d <= 7 && pct < 60) out.push({ ...p, _d: d, _sev: 1, _risk: `closes in ${days(d)} · draft ${pct}% done` });
+    else if (d <= 14 && pct === 0) out.push({ ...p, _d: d, _sev: 2, _risk: `closes in ${days(d)} · not started` });
   }
   return out.sort((a, b) => a._sev - b._sev || a._d - b._d);
 }
@@ -733,7 +734,6 @@ function riskItems() {
 const CRUMB = { home: 'For You', discover: 'Discover', admissions: 'Admissions', scouted: 'Scouted', detail: 'Listing', agent: 'Agent', apply: 'Apply', profile: 'Profile' };
 function goV(v, opts) {
   // Profile IS the dashboard once you have an account — the workspace, not a settings page
-  if (v === 'profile' && signedIn() && !(opts && (opts.forceProfile || opts.scrollTo))) return openDash(S.dashSec || 'dossier');
   if (v === 'agent' && !AI_ENABLED) return soon();
   S.view = v;
   stopCountdown();
@@ -1494,7 +1494,7 @@ function setOutcome(id, v) {
   const o = DATA.find((x) => String(x.id) === String(id));
   pipeSet(id, v === 'waiting' ? { stage: 'applied' } : { stage: 'result', outcome: v, resultAt: Date.now() }, o);
   closeSheet();
-  toast(v === 'won' ? 'Logged — congratulations 🎉' : v === 'waiting' ? 'Still open — kept in Applied' : 'Logged. On to the next one.');
+  toast(v === 'won' ? 'Logged. It stays in your record.' : v === 'waiting' ? 'Still open — kept in Applied' : 'Logged. On to the next one.');
   if (dashLive()) renderDash(S.dashSec); else renderScouted();
 }
 
@@ -1977,7 +1977,8 @@ function startApply(id) {
   const answers = seedFromEssayBank(o, (pp && pp.answers) || {});
   S.apply = { o, step: (pp && pp.answers && Object.keys(pp.answers).length) ? 1 : 0, kit: kitSeed(), answers, drafting: null };
   S.saved.add(String(id)); ls('scout-saved', [...S.saved]);
-  if (!pp || pp.stage === 'saved') pipeSet(id, { stage: 'draft', draftAt: Date.now(), pct: applyPct(S.apply.answers) }, o);
+  // NOT promoted to 'draft' here — saveApply() does that on the first persisted answer.
+  // Opening the window for three seconds must not inflate the draft tile or riskItems severity.
   goV('apply');
 }
 function saveApply() {
@@ -2379,7 +2380,7 @@ function loadThread(id) {
 }
 function fitAgent() {
   const sh = document.querySelector('.agent-shell');
-  const inDash = document.getElementById('dash')?.classList.contains('on') && S.dashSec === 'chat';
+  const inDash = false;   // the chat shell no longer relocates into the dashboard
   if (!sh || (S.view !== 'agent' && !inDash) || innerWidth <= 900) { if (sh) sh.style.height = ''; return; }
   const top = sh.getBoundingClientRect().top + scrollY;
   sh.style.height = Math.max(520, innerHeight - top - 34) + 'px';
@@ -3087,7 +3088,7 @@ async function renderAdmissions(opts) {
   const mc = masterCompleteness();
   el.innerHTML = `
     <h1 class="h-display">Admissions</h1>
-    <p class="lede">Entrance exams, university intakes, executive programs and online degrees — <b>${ADM.length} cycles</b> tracked, <b>${openNow} accepting applications right now</b>. Matched against your stage, marks and scores${mc.pct < 40 ? ` — <b style="cursor:pointer" onclick="goV('profile',{scrollTo:'#ps-master'})">complete your profile</b> and the matching gets sharper` : ''}.</p>
+    <p class="lede">Entrance exams, university intakes, executive programs and online degrees — <b>${ADM.length} cycles</b> tracked, <b>${openNow} accepting applications right now</b>. Matched against your stage, marks and scores${mc.pct < 40 ? ` — <b style="cursor:pointer" onclick="openDash('details')">complete your profile</b> and the matching gets sharper` : ''}.</p>
     <div class="exam-rail-wrap"><div class="exam-rail-h">${ic('clock', 13)} Test calendar — the exams that open these doors</div>
       <div class="exam-rail">${examStrip().map((e) => `<button class="exam-chip ${e.open ? 'open' : ''} ${S.admExam === e.exam.toUpperCase().replace(/\s+2\d{3}.*/, '') ? 'on' : ''}" onclick="S.admStage='all';S._admTouched=1;S.admExam=S.admExam==='${e.exam.toUpperCase().replace(/\s+2\d{3}.*/, '').replace(/'/g, '')}'?null:'${e.exam.toUpperCase().replace(/\s+2\d{3}.*/, '').replace(/'/g, '')}';renderAdmissions()">
         <b>${esc(e.exam.replace(/\s+2\d{3}.*/, ''))}</b><i>${esc(String(e.date).replace('expected ', 'exp. ').slice(0, 26) || 'date TBC')}</i>${e.open ? '<em>window open</em>' : ''}
@@ -3162,7 +3163,7 @@ function openAdmission(id) {
     </div>
     <div class="dsec"><h3>Eligibility — you vs the bar</h3>
       <div class="adm-elig-row"><span class="k">They ask</span><span class="v">${esc(c.eligibility || 'See portal')}</span></div>
-      <div class="adm-elig-row"><span class="k">Your record</span><span class="v">${[m.pct10 ? 'Class 10: ' + m.pct10 + '%' : '', m.pct12 ? 'Class 12: ' + m.pct12 + '%' : '', m.cgpa ? 'CGPA ' + m.cgpa : '', m.workExYears ? m.workExYears + ' yrs work-ex' : ''].filter(Boolean).join(' · ') || `<b style="cursor:pointer" onclick="goV('profile',{scrollTo:'#ps-master'})">Add your marks</b> and Scout checks you against every cycle`}</span></div>
+      <div class="adm-elig-row"><span class="k">Your record</span><span class="v">${[m.pct10 ? 'Class 10: ' + m.pct10 + '%' : '', m.pct12 ? 'Class 12: ' + m.pct12 + '%' : '', m.cgpa ? 'CGPA ' + m.cgpa : '', m.workExYears ? m.workExYears + ' yrs work-ex' : ''].filter(Boolean).join(' · ') || `<b style="cursor:pointer" onclick="openDash('details')">Add your marks</b> and Scout checks you against every cycle`}</span></div>
       <div class="adm-elig-row"><span class="k">Documents</span><span class="v">${docsNeeded.map((s) => `<span class="doc-pill ${(S.docsIdx || {})[s] ? 'ok' : ''}">${(S.docsIdx || {})[s] ? '✓ ' : ''}${DOC_LABELS[s]}</span>`).join('')}</span></div>
     </div>
     ${(() => { const sch = admScholarships(c).slice(0, 6); return sch.length ? `<div class="dsec"><h3>Scholarships that fit this course</h3>
@@ -3330,10 +3331,10 @@ function masterCompleteness() {
 /* what's missing that unlocks the most — the nudge engine */
 function masterNudge() {
   const m = S.master || {};
-  if (!Object.keys(S.docsIdx || {}).length) return ['Upload your Class 10 marksheet', 'Scout reads it and fills your academics for you', "goV('profile',{scrollTo:'#ps-docs'})"];
-  if (!m.pct12 && !m.cgpa) return ['Add your Class 12 % or CGPA', 'Unlocks eligibility checks on admissions with cutoffs', "goV('profile',{scrollTo:'#ps-master'})"];
-  if (!String(m.personalStatement || '').trim()) return ['Start your personal statement', 'One essay, reused across every application — Scout drafts the first pass', "goV('profile',{scrollTo:'#ps-essays'})"];
-  if (!m.phone) return ['Add your phone number', 'Nearly every Indian form requires it', "goV('profile',{scrollTo:'#ps-master'})"];
+  if (!Object.keys(S.docsIdx || {}).length) return ['Upload your Class 10 marksheet', 'Scout reads it and fills your academics for you', "openDash('details')"];
+  if (!m.pct12 && !m.cgpa) return ['Add your Class 12 % or CGPA', 'Unlocks eligibility checks on admissions with cutoffs', "openDash('details')"];
+  if (!String(m.personalStatement || '').trim()) return ['Start your personal statement', 'One essay, reused across every application — Scout drafts the first pass', "openDash('details')"];
+  if (!m.phone) return ['Add your phone number', 'Nearly every Indian form requires it', "openDash('details')"];
   return null;
 }
 
@@ -3479,6 +3480,55 @@ async function draftEssay(key, max) {
 }
 
 /* ═══════════ PROFILE ═══════════ */
+/* "Your record" — past tense, no deadline, nothing needs you. Built from
+   scout-acts (logAct, every stage change) plus S.pipe outcomes. The retention
+   moment is LOGGING an outcome, which stays on the Tracking row; reading the
+   record belongs here. */
+const ACT_VERB = { saved: 'Saved', draft: 'Started drafting', applied: 'Sent', result: 'Heard back' };
+function historyEvents() {
+  const acts = (ls('scout-acts') || []).filter((a) => a && a.t && ACT_VERB[a.k]);
+  const out = acts.map((a) => {
+    const p = S.pipe[String(a.id)];
+    return { t: a.t, kind: a.k, title: (p && p.snap && p.snap.title) || 'An opportunity',
+      org: (p && p.snap && p.snap.org) || '', outcome: a.k === 'result' ? (p && p.outcome) : null };
+  });
+  return out.sort((a, b) => b.t - a.t);
+}
+function historyStats() {
+  const all = Object.values(S.pipe || {}).filter((p) => p.snap && !p._demo);
+  const results = all.filter((p) => p.stage === 'result');
+  const sent = all.filter((p) => ['applied', 'result'].includes(p.stage)).length;
+  const won = results.filter((p) => p.outcome === 'won').length;
+  const shortlisted = results.filter((p) => p.outcome === 'shortlist').length;
+  return { tracked: all.length, sent, heard: results.length, won, shortlisted };
+}
+function historyHTML() {
+  const ev = historyEvents(), st = historyStats();
+  if (!ev.length) return `<div class="psec" id="ps-record"><h3>Your record</h3>
+    <p class="psec-sub">Everything you save, draft, send and hear back about is kept here — so you can see what you actually did this year, not just what is open right now.</p>
+    <div class="empty e-rich"><span class="e-ic">${ic('clock', 20)}</span><div class="h">Nothing here yet</div>
+      <div class="s">Save your first opportunity and the record starts.</div>
+      <div class="e-acts"><button class="pill pill-dark" onclick="goV('discover')">Find something</button></div></div></div>`;
+  const lim = S.histLim || 20;
+  const byYear = {};
+  for (const e of ev) { const y = new Date(e.t).getFullYear(); (byYear[y] = byYear[y] || []).push(e); }
+  return `<div class="psec" id="ps-record"><h3>Your record</h3>
+    <p class="psec-sub">What you actually did — kept on this device, never uploaded.</p>
+    <div class="hist-stats">
+      ${[[st.tracked, 'tracked'], [st.sent, 'sent'], [st.heard, 'heard back'], [st.won + st.shortlisted, 'won or shortlisted']]
+        .map(([n, l]) => `<div class="hs"><b>${n}</b><span>${l}</span></div>`).join('')}
+    </div>
+    ${Object.keys(byYear).sort((a, b) => b - a).map((y) => `
+      <div class="hist-year">${y}</div>
+      ${byYear[y].slice(0, lim).map((e) => `<div class="hist-row ${e.kind}">
+        <span class="hr-d">${new Date(e.t).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</span>
+        <span class="hr-v">${ACT_VERB[e.kind]}</span>
+        <span class="hr-t">${esc(e.title)}${e.org ? `<i> · ${esc(e.org)}</i>` : ''}</span>
+        ${e.outcome ? `<span class="hr-o ${e.outcome}">${esc((OUTCOMES.find(([v]) => v === e.outcome) || [, e.outcome])[1])}</span>` : ''}
+      </div>`).join('')}`).join('')}
+    ${ev.length > lim ? `<button class="pill pill-ghost" style="margin-top:14px" onclick="S.histLim=${lim + 40};renderProfile()">Show more</button>` : ''}
+  </div>`;
+}
 function renderProfile() {
   const el = document.getElementById('vw-profile');
   const matches = computeMatches();
@@ -3496,84 +3546,35 @@ function renderProfile() {
       <div class="ps"><div class="v" data-count="${pipeCounts().saved}">0</div><div class="l">Saved</div></div>
       <div class="ps"><div class="v" data-count="${pipeCounts().applied + pipeCounts().result}">0</div><div class="l">Applied</div></div>
       <div class="ps"><div class="v">${matches[0] ? matches[0]._score + '%' : '—'}</div><div class="l">Top match</div></div>
-      <div class="ps"><div class="v" data-count="${streak}">0</div><div class="l">Day streak</div></div>
+      <div class="ps"><div class="v" data-count="${masterCompleteness().pct}">0</div><div class="l">% ready</div></div>
     </div>
-    ${(() => { const mc = masterCompleteness(); const nudge = masterNudge(); return `
-    <div class="psec" id="ps-complete">
-      <div class="mc-bar-row"><h3 style="margin:0">Application readiness</h3><b class="mc-pct">${mc.pct}%</b></div>
-      <div class="mc-bar"><i style="width:${mc.pct}%"></i></div>
-      <div class="mc-sub">${mc.filled}/${mc.need} fields · ${mc.essays}/${ESSAY_BANK.length} essays · ${mc.docs} documents. The fuller this is, the more Scout can apply to without asking you anything.</div>
-      ${nudge ? `<button class="mc-nudge" onclick="${nudge[2]}"><b>${nudge[0]}</b><i>${nudge[1]}</i>${ic('arrow-right', 14)}</button>` : ''}
-    </div>` })()}
+    <p class="prof-hint">${ic('arrow-right', 13)} Your details, essays and documents live in the dashboard — <b onclick="openDash('details')">open it</b>.</p>
 
-    <div class="psec" id="ps-master"><h3>Application profile</h3>
-      <p class="psec-sub">Everything forms ask, answered once — Scout autofills every application, and the browser extension, from here. This is the read-only view; edit it in your dashboard.</p>
-      <button class="pill pill-dark" style="margin-bottom:16px" onclick="openDash('dossier')">${ic('pen', 14)} Edit in dashboard</button>
-      ${MASTER_SECTIONS.map((sec) => {
-        const filled = sec.fields.filter((f) => String(S.master[f[0]] || '').trim());
-        return `<div class="mp-sec ro ${S.mpOpen === sec.id ? 'open' : ''}">
-        <button class="mp-head" onclick="S.mpOpen=S.mpOpen==='${sec.id}'?null:'${sec.id}';renderProfile()">
-          ${ic(sec.icn, 15)}<b>${sec.t}</b>
-          <i>${filled.length}/${sec.fields.length}</i>${ic('chev-down', 13)}
-        </button>
-        ${S.mpOpen === sec.id ? `<div class="mp-read">${sec.fields.map(([f, lab]) => `
-          <div class="mpr"><span class="k">${lab}</span><span class="v ${String(S.master[f] || '').trim() ? '' : 'na'}">${esc(S.master[f] || '') || '—'}</span></div>`).join('')}
-          <button class="mp-edit" onclick="openDash('dossier')">${ic('pen', 12)} Edit these in the dashboard</button></div>` : ''}
-      </div>`; }).join('')}
-    </div>
-
-    ${linksPanelHTML()}
-    <div class="psec" id="ps-essays"><h3>Essay bank</h3>
-      <p class="psec-sub">Write (or draft) each once — Scout adapts them per application instead of starting from zero.</p>
-      ${ESSAY_BANK.map(([k, lab, max, hint]) => `<div class="ap-q">
-        <div class="ap-qh"><span class="ap-ql">${lab}</span>
-          ${AI_ENABLED ? `<button class="pill pill-ghost pill-sm" id="es-${k}" onclick="draftEssay('${k}',${max})">${ic('spark', 12)} Draft with Scout</button>` : ''}
-        </div>
-        <div class="ap-hint">${hint}</div>
-        <textarea id="ma-${k}" maxlength="${max}" placeholder="Your words beat perfect words…" onchange="setMaster('${k}',this.value)" oninput="this.nextElementSibling.textContent=this.value.length+' / ${max}'">${esc(S.master[k] || '')}</textarea>
-        <div class="ap-count">${String(S.master[k] || '').length} / ${max}</div>
-      </div>`).join('')}
-    </div>
-
-    <div class="psec" id="ps-docs"><h3>Documents</h3>
-      <p class="psec-sub">Uploaded once, auto-fitted to what each form demands (size, format, dimensions), and kept in this browser only — nothing is uploaded anywhere. Marksheets are read by Scout to fill your academics.</p>
-      <div class="doc-grid">${[...Object.keys(DOC_LABELS), ...Object.keys(S.docsIdx || {}).filter((s) => /^cert-/.test(s))].map((slot) => { const have = (S.docsIdx || {})[slot]; return `
-        <div class="doc-cell ${have ? 'have' : ''}" id="doc-${slot}">
-          <div class="dc-top">${ic(have ? 'check' : 'upload', 16)}<b>${esc(docLabel(slot))}</b></div>
-          <i class="dc-spec">${have && have.summary ? esc(have.summary.slice(0, 80)) : docSpec(slot).label}</i>
-          ${have ? `<i class="dc-meta">${esc(have.name).slice(0, 26)} · ${Math.round((have.bytes || 0) / 1024)}KB</i>
-            <div class="dc-acts"><button onclick="downloadDoc('${slot}')">${ic('download', 13)}</button><label class="dc-re">${ic('refresh', 13)}<input type="file" accept="image/*,.pdf" hidden onchange="uploadDoc('${slot}',this)"></label><button onclick="deleteDoc('${slot}')">${ic('x', 13)}</button></div>`
-          : `<label class="dc-up">${ic('plus', 14)} Upload<input type="file" accept="image/*,.pdf" hidden onchange="uploadDoc('${slot}',this)"></label>`}
-        </div>`; }).join('')}
-        <label class="doc-cell add-cert">
-          <div class="dc-top">${ic('plus', 16)}<b>Add a certificate</b></div>
-          <i class="dc-spec">Awards, NCC/NSS, sports, languages, anything — Scout reads, classifies and uses it</i>
-          <input type="file" accept="image/*,.pdf" hidden onchange="addCert(this)">
-        </label></div>
-    </div>
-
-    <div class="psec"><h3>Opportunity passport</h3>
+    <div class="psec" id="ps-you"><h3>Who you are</h3>
       ${[['Role', roleLabel], ['Institution', p.institution || '—'], ['Year', p.gradYear || '—'], ['CGPA', p.cgpa || '—'], ['City', p.city || '—'], ['Open to', ({ india: 'India only', abroad: 'Abroad', remote: 'Remote', any: 'Anywhere' })[p.geo] || '—'], ['Goal', ((GOALS.find((g) => g.v === p.goal) || {}).t) || '—']].map(([k, v]) => `<div class="prow"><span class="k">${k}</span><span class="v">${esc(v)}</span></div>`).join('')}
+      <div class="prow"><span class="k">Interests</span><span class="v"><span class="kw inline">${(p.domains || []).concat(p.looking || []).map((k) => `<span>${esc(k)}</span>`).join('') || '—'}</span></span></div>
     </div>
-    <div class="psec"><h3>Interests</h3><div class="kw">${(p.domains || []).concat(p.looking || []).map((k) => `<span>${esc(k)}</span>`).join('') || '<span>—</span>'}</div></div>
-    <div class="psec" id="ps-prefs"><h3>Notifications</h3>
-      <div class="prow"><span class="k">Deadline reminders — 14 &amp; 3 days before</span><div class="tog ${p.reminders ? 'on' : ''}" onclick="S.profile.reminders=!S.profile.reminders;ls('scout-profile',S.profile);renderProfile()"><i></i></div></div>
-      <div class="prow"><span class="k">Daily match digest</span><div class="tog ${p.digest ? 'on' : ''}" onclick="S.profile.digest=!S.profile.digest;ls('scout-profile',S.profile);renderProfile()"><i></i></div></div>
-      <div class="prow"><span class="k">WhatsApp nudges</span><span class="v">${ls('scout-whatsapp') ? 'On · ' + esc((ls('scout-whatsapp') || {}).phone || '') : '<b style="cursor:pointer" onclick="enableWhatsApp()">Enable</b>'}</span></div>
-    </div>
-    <div class="psec"><h3>Connected accounts</h3>
+
+    ${historyHTML()}
+
+    <div class="psec" id="ps-settings"><h3>Settings</h3>
+      <div id="ps-prefs">
+        <div class="prow"><span class="k">Deadline reminders — 3 days before</span><div class="tog ${p.reminders ? 'on' : ''}" role="switch" aria-checked="${!!p.reminders}" tabindex="0" onclick="S.profile.reminders=!S.profile.reminders;ls('scout-profile',S.profile);renderProfile()"><i></i></div></div>
+        <div class="prow"><span class="k">Daily match digest</span><div class="tog ${p.digest ? 'on' : ''}" role="switch" aria-checked="${!!p.digest}" tabindex="0" onclick="S.profile.digest=!S.profile.digest;ls('scout-profile',S.profile);renderProfile()"><i></i></div></div>
+        <div class="prow"><span class="k">WhatsApp nudges</span><span class="v">${ls('scout-whatsapp') ? 'On · ' + esc((ls('scout-whatsapp') || {}).phone || '') : '<b style="cursor:pointer" onclick="enableWhatsApp()">Enable</b>'}</span></div>
+      </div>
       <div class="prow"><span class="k">GitHub</span><span class="v">${S.accounts.github
         ? `@${esc(S.accounts.github.handle)} · ${S.accounts.github.publicRepos} repos <b style="cursor:pointer;color:var(--ink3)" onclick="disconnectAcct('github')">Disconnect</b>`
-        : `<span class="conn-in"><input id="gh-p" placeholder="username" style="width:130px"><b style="cursor:pointer" onclick="connectGitHub(document.getElementById('gh-p').value)">Connect</b></span>`}</span></div>
+        : `<span class="conn-in"><input id="gh-p" placeholder="username" style="width:130px" aria-label="GitHub username"><b style="cursor:pointer" onclick="connectGitHub(document.getElementById('gh-p').value)">Connect</b></span>`}</span></div>
       <div class="prow"><span class="k">What Scout has learned</span><span class="v">${memorySources().length} source${memorySources().length === 1 ? '' : 's'} feeding autofill</span></div>
-    </div>
-    <div class="psec" id="ps-ext"><h3>Scout Autofill — browser extension</h3>
-      <p class="psec-sub">Install once and any application form on the web — college portals, Google Forms, career pages — fills itself from your profile with one click. It never auto-submits, and never touches passwords or payment fields.</p>
-      <div class="ext-row">
-        <button class="pill pill-dark" onclick="downloadExtension()">${ic('download', 14)} Download the extension</button>
-        <button class="pill pill-ghost" onclick="syncExtension()">${ic('refresh', 14)} Sync my data to it</button>
-      </div>
-      <ol class="ext-steps"><li>Download and unzip</li><li>chrome://extensions → Developer mode → Load unpacked → pick the folder</li><li>On any form: click the Scout heart → Fill</li></ol>
+      <details class="psec-fold" id="ps-ext"><summary>Scout Autofill — browser extension</summary>
+        <p class="psec-sub">Install once and any application form on the web fills itself from your details with one click. It never auto-submits, and never touches passwords or payment fields.</p>
+        <div class="ext-row">
+          <button class="pill pill-dark" onclick="downloadExtension()">${ic('download', 14)} Download the extension</button>
+          <button class="pill pill-ghost" onclick="syncExtension()">${ic('refresh', 14)} Sync my data to it</button>
+        </div>
+        <ol class="ext-steps"><li>Download and unzip</li><li>chrome://extensions → Developer mode → Load unpacked → pick the folder</li><li>On any form: click the Scout heart → Fill</li></ol>
+      </details>
     </div>
 
     <div class="psec" id="ps-acct"><h3>Your data</h3>
@@ -3585,8 +3586,11 @@ function renderProfile() {
         <button class="pill pill-dark" onclick="exportData()">${ic('download', 14)} Export a backup</button>
         <label class="pill pill-ghost" style="cursor:pointer">${ic('upload', 14)} Import a backup<input type="file" accept="application/json,.json" hidden onchange="importData(this)"></label>
       </div>
+      <details class="danger-zone"><summary>Danger zone</summary>
+        <p class="psec-sub">Deletes your profile, every tracked opportunity, every draft and every document on this device. Export a backup first — this cannot be undone.</p>
+        <button class="signout" onclick="resetDevice()">Reset this device</button>
+      </details>
     </div>
-    <button class="signout" onclick="resetDevice()">Reset this device</button>
   </div>`;
   hydrateIcons(el);
   animateIn(el);
@@ -3609,7 +3613,7 @@ function toggleSave(id, btn) {
     S.saved.add(id);
     if (!prev) pipeSet(id, { stage: 'saved' }, o);
     try { navigator.vibrate && navigator.vibrate(8); } catch {}
-    toast('Saved to Scouted — reminders 14 and 3 days before the deadline');
+    toast('Saved to Scouted');
   }
   ls('scout-saved', [...S.saved]);
   invalidateUV(); queueSync();
@@ -3854,7 +3858,7 @@ function logAgent(id, patch) {
   if (patch.status === 'failed') pushNotif('agent', patch.label || 'Scout hit a snag', (patch.detail || 'The draft was not changed.') + ' Nothing was sent anywhere. Retry from the dashboard.', patch.oppId);
   const el = document.getElementById('dash-body');
   // Today and Tracking both surface failed jobs now, so they repaint too
-  if (el && dashLive() && ['notifications', 'today', 'tracking'].includes(S.dashSec)) renderDash(S.dashSec);
+  if (el && dashLive() && ['today', 'tracking'].includes(S.dashSec)) renderDash(S.dashSec);
 }
 function retryAgentJob(id) {
   const job = agentLog().find((x) => x.id === id);
@@ -3867,16 +3871,19 @@ function retryAgentJob(id) {
 function atRiskItems() { return riskItems().filter((r) => r._sev <= 1); }
 
 /* ————— the screen ————— */
+/* Three sections, not six. Paths iterated the same S.pipe as Tracking and read
+   o.days_left, which snapOf never stores — it silently dropped the deadline for
+   exactly the rotated-out items most likely to be at risk. Notifications was a
+   second view of inputs todayAgenda already ingests. Scout AI is a dock on every
+   other view; being a tab was the only reason .agent-shell had to be relocated
+   between #vw-agent and #dash-body. All three redirect via DASH_ALIAS. */
 const DASH_SECTIONS = [
   ['today', 'Today', 'spark'],
-  ['paths', 'Paths', 'compass'],
   ['tracking', 'Tracking', 'grid'],
-  ['dossier', 'Dossier', 'doc'],
-  ['notifications', 'Notifications', 'bell'],
-  ['chat', 'Scout AI', 'orb'],
+  ['details', 'Your details', 'doc'],
 ];
 /* A returning user's S.dashSec may name a section we merged away. */
-const DASH_ALIAS = { queue: 'tracking', saved: 'tracking', progress: 'today' };
+const DASH_ALIAS = { queue: 'tracking', saved: 'tracking', progress: 'today', dossier: 'details', paths: 'tracking', notifications: 'today', chat: 'today' };
 const DASH_ALIAS_FILTER = { queue: 'live', saved: 'saved' };
 const TRACK_FILTERS = [
   ['live', 'Live', (p, d) => ['saved', 'draft'].includes(p.stage) && (d == null || d >= 0)],
@@ -3893,6 +3900,14 @@ function openDash(sec) {
   show('dash');
   renderDash(S.dashSec, DASH_ALIAS_FILTER[want]);
 }
+/* Leave the dashboard for the real Profile route in one paint — closeDash()
+   sends you via Home, which flashes the feed on the way. */
+function goProfile(anchor) {
+  const shell = document.querySelector('#dash-body .agent-shell');
+  if (shell) document.getElementById('vw-agent').appendChild(shell);
+  show('main');
+  goV('profile', anchor ? { scrollTo: anchor } : undefined);
+}
 function closeDash() {
   // put the chat shell back where the main app expects it
   const shell = document.querySelector('#dash-body .agent-shell');
@@ -3903,8 +3918,7 @@ function closeDash() {
 function dashBadge(v) {
   if (v === 'today') { const n = todayAgenda().length; return n ? { n, hot: riskItems().some((r) => r._sev <= 1) } : null; }
   if (v === 'tracking') { const n = riskItems().length; return n ? { n, hot: true } : null; }
-  if (v === 'notifications') { const n = notifs().filter((x) => !x.read).length; return n ? { n, hot: agentLog().some((j) => j.status === 'failed') } : null; }
-  if (v === 'dossier') { const mc = masterCompleteness(); return mc.pct < 60 ? { n: mc.pct + '%', hot: false } : null; }
+  if (v === 'details') { const mc = masterCompleteness(); return mc.pct < 60 ? { n: mc.pct + '%', hot: false } : null; }
   return null;
 }
 function renderDashNav() {
@@ -3919,7 +3933,7 @@ function renderDashNav() {
   nav.innerHTML = `
     <div class="dn-brand" onclick="closeDash()">${heartSVG()}<b>Scout</b><span class="dn-dot" id="dn-dot"></span></div>
     <div class="dn-secs">${chip('dn-it')}</div>
-    <button class="dn-me" onclick="closeDash();goV('profile',{forceProfile:1})">
+    <button class="dn-me" onclick="goProfile()">
       <span class="as-av" style="background:${PASTELS[ini.charCodeAt(0) % PASTELS.length]}">${ini}</span>
       <span class="as-mt"><b>${esc(nm.split(' ')[0])}</b><i id="dn-ready">${mc.pct}% ready</i></span>
     </button>`;
@@ -3944,17 +3958,13 @@ function renderDash(sec, filter) {
   const el = document.getElementById('dash-body');
   const meta = DASH_SECTIONS.find(([v]) => v === sec) || [];
   document.getElementById('dash-crumb').innerHTML = `<span>Dashboard</span><em>/</em><b>${meta[1] || sec}</b>`;
-  if (sec !== 'chat') {                       // hand the live chat shell back to the main app
-    const shell = document.querySelector('#dash-body .agent-shell');
-    if (shell) document.getElementById('vw-agent').appendChild(shell);
-  }
+  // The chat shell lives in #vw-agent permanently now. Nothing relocates it.
+  const stray = document.querySelector('#dash-body .agent-shell');
+  if (stray) document.getElementById('vw-agent').appendChild(stray);
   if (sec === 'today') el.innerHTML = demoBanner() + dashToday();
-  else if (sec === 'paths') el.innerHTML = demoBanner() + dashPaths();
   else if (sec === 'tracking') el.innerHTML = demoBanner() + dashTracking();
-  else if (sec === 'dossier') el.innerHTML = demoBanner() + dashDossier();
-  else if (sec === 'notifications') { el.innerHTML = dashNotifs(); markNotifsRead(); }
-  else if (sec === 'chat') { dashChat(el); }
-  else el.innerHTML = dashToday();
+  else if (sec === 'details') el.innerHTML = demoBanner() + dashDetails();
+  else el.innerHTML = demoBanner() + dashToday();
   hydrateIcons(el);
   animateIn(el);
   el.scrollTop = 0;
@@ -3987,6 +3997,10 @@ function ghostRows(kind, n) {
   return out;
 }
 const DASH_EMPTY = {
+  today: { icon: 'spark', title: 'Nothing tracked yet',
+    body: 'Save an opportunity or an admission and this becomes your daily to-do — what closes when, what is half-drafted, and what needs you next.',
+    cta: 'Show me what fits me', onclick: "closeDash();goV('home')",
+    secondary: 'Browse admissions', secondaryClick: "closeDash();goV('admissions')" },
   paths: { icon: 'compass', title: 'No paths yet', ghost: 'path',
     body: 'Save an opportunity or an admission and it becomes a tracked path here — every milestone from first draft to result.',
     cta: 'Find something worth pursuing', onclick: "closeDash();goV('discover')",
@@ -3995,10 +4009,10 @@ const DASH_EMPTY = {
     body: 'Every opportunity you save lands here with its stage, deadline and how far the draft has got. It is the ledger Scout keeps so you never lose one.',
     cta: 'Go find your first', onclick: "closeDash();goV('discover')",
     secondary: 'See what closes this week', secondaryClick: "closeDash();goV('discover',{sort:'closing'})" },
-  dossier: { icon: 'doc', title: 'Your dossier is empty',
+  details: { icon: 'doc', title: 'Nothing filled in yet',
     body: 'Answer these once and Scout fills them into every application — and into the browser extension. Start with your name and Class 12 marks; a marksheet upload fills most of the rest for you.',
-    cta: 'Start with personal details', onclick: "S.dosOpen='personal';renderDash('dossier')",
-    secondary: 'Upload a marksheet instead', secondaryClick: "closeDash();goV('profile',{scrollTo:'#ps-docs'})" },
+    cta: 'Start with personal details', onclick: "S.dosOpen='personal';renderDash('details')",
+    secondary: 'Upload a marksheet instead', secondaryClick: "renderDash('details')" },
   notifications: { icon: 'check', title: 'All quiet', ghost: 'nf',
     body: 'Deadline reminders, Scout\'s receipts and anything that needs you will land here. Interruptions stay rare on purpose.',
     cta: 'Set a reminder on something', onclick: "closeDash();goV('discover')" },
@@ -4035,6 +4049,7 @@ function seedDemo() {
 }
 function clearDemo() {
   if (S._realPipe) S.pipe = S._realPipe;
+  ls('scout-pipe', S.pipe);           // rewrite disk in case a save landed while demo was on
   S._realPipe = null; S.demo = false;
   invalidateUV();
   toast('Demo data cleared');
@@ -4050,71 +4065,140 @@ function demoBanner() {
    NOTE ON ESCAPING: titles and reasons are escaped HERE, at source, and
    interpolated raw below — because masterNudge()[2] is an onclick string that
    must NOT be escaped. Any new agenda source must call esc() itself. */
+/* The agenda, ranked by CONSEQUENCE — not by source order.
+   The old version pushed failed agent jobs first simply because that loop ran
+   first, so two scraper failures outranked a draft closing tonight. Every item
+   now carries an explicit urgency, everything is sorted once, then sliced.
+
+   Agent failures sit at 4: the user believes work happened that did not, which
+   is worse than a soft deadline and not worse than an irreversible one.
+
+   ESCAPING: titles and reasons are escaped HERE, at source, and interpolated raw
+   below — because masterNudge()[2] is an onclick string that must NOT be escaped.
+   Any new agenda source must call esc() itself. */
+const AGENDA_BUCKETS = [
+  [0, 'Closing now'], [1, 'Closing now'], [2, 'Closing now'],
+  [3, 'Needs a decision'], [4, 'Needs a decision'], [5, 'Needs a decision'],
+  [6, 'Waiting on them'],
+  [7, 'When you have a minute'], [8, 'When you have a minute'],
+];
 function todayAgenda() {
   const out = [];
-  const fails = agentLog().filter((j) => j.status === 'failed');
-  for (const j of fails.slice(0, 2)) out.push({ kind: 'fail', icon: 'zap',
-    title: esc(j.label || 'A Scout job failed'), why: esc((j.detail || '') + ' Nothing was sent.'),
-    cta: 'Retry', onclick: `retryAgentJob('${j.id}')` });
-  for (const r of riskItems().filter((x) => x._sev <= 2).slice(0, 3)) out.push({ kind: 'risk', icon: 'clock',
-    sev: r._sev, title: esc(shortTitle(r.snap)), why: esc(r._risk),
-    cta: r._sev === 3 ? 'Review' : (r.pct || 0) >= 75 ? 'Review & send' : 'Work on it',
-    onclick: `closeDash();startApply('${r.id}')` });
-  const due = reminders().filter((r) => !r.done && r.due <= Date.now() + 2 * 864e5).slice(0, 2);
-  for (const r of due) out.push({ kind: 'remind', icon: 'bell',
-    title: esc(r.title || 'Reminder'), why: r.kind === 'opens' ? 'the window opens' : 'deadline nudge',
-    cta: 'Open', onclick: `closeDash();openDetail('${r.oppId}')` });
-  const stale = Object.values(S.pipe || {}).filter((p) => p.snap && p.stage === 'applied' && (Date.now() - (p.ts || 0)) > 21 * 864e5).slice(0, 2);
-  for (const p of stale) out.push({ kind: 'stale', icon: 'check',
-    title: esc(shortTitle(p.snap)), why: 'sent over three weeks ago — did you hear back?',
-    cta: 'Log the result', onclick: `askOutcome('${p.id}')` });
+  const push = (u, o) => out.push({ u, ...o });
+
+  for (const r of riskItems()) {
+    const t = esc(shortTitle(r.snap)), why = esc(r._risk);
+    if (r._sev === 3) continue;                       // shown separately, never at the top
+    if (r._sev === 0 && r._d === 0) push(0, { kind: 'risk', icon: 'clock', title: t, why, cta: (r.pct || 0) >= 75 ? 'Review & send' : 'Work on it', onclick: `closeDash();startApply('${r.id}')` });
+    else if (r._sev === 0) push(2, { kind: 'risk', icon: 'clock', title: t, why, cta: (r.pct || 0) >= 75 ? 'Review & send' : 'Work on it', onclick: `closeDash();startApply('${r.id}')` });
+    else if (r._sev === 1) push(5, { kind: 'risk', icon: 'clock', title: t, why, cta: 'Work on it', onclick: `closeDash();startApply('${r.id}')` });
+    else if (r._sev === 2) push(7, { kind: 'risk', icon: 'clock', title: t, why, cta: 'Start it', onclick: `closeDash();startApply('${r.id}')` });
+  }
+  for (const r of reminders().filter((x) => !x.done && x.due <= Date.now() + 2 * 864e5).slice(0, 3))
+    push(3, { kind: 'remind', icon: 'bell', title: esc(r.title || 'Reminder'),
+      why: r.kind === 'opens' ? 'the window opens' : 'deadline nudge',
+      cta: 'Open', onclick: `closeDash();openDetail('${r.oppId}')` });
+  for (const j of agentLog().filter((x) => x.status === 'failed').slice(0, 2))
+    push(4, { kind: 'fail', icon: 'zap', title: esc(j.label || 'A Scout job failed'),
+      why: esc((j.detail || '') + ' Nothing was sent.'),
+      cta: j.oppId ? 'Retry' : null, onclick: j.oppId ? `retryAgentJob('${j.id}')` : '' });
+  for (const p of Object.values(S.pipe || {}).filter((x) => x.snap && x.stage === 'applied' && (Date.now() - (x.appliedAt || x.ts || 0)) > 21 * 864e5).slice(0, 3)) {
+    const sentAt = p.appliedAt || p.ts, n = sentAt ? Math.floor((Date.now() - sentAt) / 864e5) : null;
+    push(6, { kind: 'stale', icon: 'check', title: esc(shortTitle(p.snap)),
+      why: n ? `sent ${n} days ago — did you hear back?` : 'sent a while ago — did you hear back?',
+      cta: 'Log the result', onclick: `askOutcome('${p.id}')` });
+  }
   const nudge = masterNudge();
-  if (nudge) out.push({ kind: 'dossier', icon: 'user', title: esc(nudge[0]), why: esc(nudge[1]), cta: 'Do it', onclick: nudge[2] });
-  return out.slice(0, 7);
+  if (nudge) push(8, { kind: 'details', icon: 'user', title: esc(nudge[0]), why: esc(nudge[1]), cta: 'Do it', onclick: nudge[2] });
+
+  out.sort((a, b) => a.u - b.u);
+  return out.slice(0, 5);
+}
+/* Severity 3 is unrecoverable, so it is never urgent — but it is the exact
+   failure Scout exists to prevent, so burying it teaches nothing. One row,
+   dismissible, at the bottom. */
+function missedItem() {
+  const dismissed = ls('scout-missed-seen') || [];
+  return riskItems().find((r) => r._sev === 3 && !dismissed.includes(r.id)) || null;
+}
+function dismissMissed(id) {
+  const d = ls('scout-missed-seen') || []; d.push(id);
+  ls('scout-missed-seen', d.slice(-50));
+  renderDash('today');
 }
 function dashToday() {
   const nm = ((S.user && S.user.name) || 'there').split(' ')[0];
   const hr = new Date().getHours();
   const greet = hr < 12 ? 'Good morning' : hr < 17 ? 'Good afternoon' : 'Good evening';
   const agenda = todayAgenda();
+  const missed = missedItem();
   const c = pipeCounts();
   const all = Object.values(S.pipe).filter((p) => p.snap);
   const sent = c.applied + c.result;
   const tracked = c.saved + c.draft + sent;
-  const slipped = all.filter((p) => ['saved', 'draft'].includes(p.stage) && (pipeDays(p) != null && pipeDays(p) < 0)).length;
+  const upcoming = reminders().filter((r) => !r.done && r.due > Date.now() + 2 * 864e5).sort((a, b) => a.due - b.due);
+
+  // No statistic renders below n=3. "0% follow-through" over one save is noise.
+  const STATS_FLOOR = 3;
+  const showStats = tracked >= STATS_FLOOR;
+  const slipped = all.filter((p) => ['saved', 'draft'].includes(p.stage) && pipeDays(p) != null && pipeDays(p) < 0).length;
   const hours = all.filter((p) => p.stage !== 'saved').reduce((n, p) => n + (EFFORT_HOURS[p.snap.type] || 8), 0);
-  const stake = all.filter((p) => p.stage === 'applied' || p.stage === 'result').reduce((n, p) => n + (p.snap.prize_cash || 0), 0);
-  const sevCls = (a) => a.kind === 'fail' ? 'sev-fail' : a.sev === 0 || a.sev === 3 ? 'sev-hot' : a.sev === 1 ? 'sev-warm' : '';
-  // every tile routes into a Tracking filter — a number you cannot act on is decoration
+  const stake = all.filter((p) => ['applied', 'result'].includes(p.stage)).reduce((n, p) => n + (p.snap.prize_cash || 0), 0);
+
   const tile = (v, l, sub, f) => `<button class="td-tile" onclick="renderDash('tracking','${f}')"><b>${v}</b><span>${l}</span><i>${sub}</i></button>`;
-  return `<h2 class="dash-h">${greet}, ${esc(nm)}.</h2>
-    <p class="dash-sub">${agenda.length ? `${agenda.length} ${agenda.length === 1 ? 'thing needs' : 'things need'} you today.` : 'Nothing is at risk. This is what on-top-of-it looks like.'}</p>
-    ${agenda.length ? `<div class="td-list">${agenda.map((a) => `
-      <div class="td-row ${sevCls(a)}">
+  // Only severity 0 gets --red. Colour is never the only channel — each row also
+  // carries its bucket heading and a rule weight.
+  const sevCls = (a) => a.u === 0 ? 'sev-hot' : a.u <= 2 ? 'sev-warm' : a.kind === 'fail' ? 'sev-fail' : '';
+
+  let agendaHTML = '';
+  if (agenda.length) {
+    let lastBucket = null;
+    agendaHTML = '<div class="td-list">' + agenda.map((a) => {
+      const bucket = (AGENDA_BUCKETS.find(([u]) => u === a.u) || [, ''])[1];
+      const head = bucket !== lastBucket ? `<div class="td-bucket">${bucket}</div>` : '';
+      lastBucket = bucket;
+      return `${head}<div class="td-row ${sevCls(a)}">
         <span class="td-ic">${ic(a.icon, 15)}</span>
         <div class="td-m"><b>${a.title}</b><i>${a.why}</i></div>
-        <button class="pill pill-dark pill-sm" onclick="${a.onclick}">${a.cta}</button>
-      </div>`).join('')}</div>`
-    : tracked ? `<div class="td-clear">${ic('check', 22)}<div><b>You are clear.</b><i>Nothing closing, nothing stalled, nothing waiting on you.</i></div>
-        <button class="pill pill-ghost" onclick="closeDash();goV('discover')">Find something new</button></div>`
-    : emptyState({ icon: 'spark', title: `Welcome, ${esc(nm)}.`,
-        body: 'Scout is watching thousands of live opportunities and 96 admission cycles. Save the first one that fits and this page becomes your daily to-do — deadlines, drafts, and what needs you next.',
-        cta: 'Show me what fits me', onclick: "closeDash();goV('home')",
-        secondary: 'Preview with sample data', secondaryClick: 'seedDemo()' })}
-    ${tracked ? `<div class="td-tiles">
-      ${tile(sent, 'actually sent', `${tracked ? Math.round(sent / tracked * 100) : 0}% follow-through`, 'applied')}
+        ${a.cta ? `<button class="pill pill-dark pill-sm" onclick="${a.onclick}">${a.cta}</button>` : ''}
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  return `<h2 class="dash-h">${greet}, ${esc(nm)}.</h2>
+    <p class="dash-sub">${agenda.length
+      ? `${agenda.length} ${agenda.length === 1 ? 'thing needs' : 'things need'} you today.`
+      : tracked ? 'Nothing is at risk. This is what on-top-of-it looks like.' : 'Everything you track will show up here.'}</p>
+    ${agendaHTML}
+    ${!agenda.length && tracked ? `<div class="td-clear">${ic('check', 22)}<div><b>You are clear.</b><i>Nothing closing, nothing stalled, nothing waiting on you.</i></div>
+      <button class="pill pill-ghost" onclick="closeDash();goV('discover')">Find something new</button></div>` : ''}
+    ${!tracked ? dashEmpty('today') : ''}
+    ${showStats ? `<div class="td-tiles">
+      ${tile(sent, 'actually sent', `${Math.round(sent / tracked * 100)}% follow-through`, 'applied')}
       ${tile(c.draft, 'in draft', c.draft ? 'pick one up' : 'nothing half-finished', 'drafting')}
       ${tile(slipped, 'slipped past', slipped ? 'closed before you sent' : 'none missed', 'closed')}
       ${tile('₹' + shortIN(stake), 'riding on it', `${hours} hrs invested`, 'applied')}
     </div>
-    <div class="td-heat"><div class="q-grp">Next 21 days</div><div class="heat-strip">${(() => {
-      const days = [];
-      for (let i = 0; i < 21; i++) {
-        const n = all.filter((p) => pipeDays(p) === i).length;
-        days.push(`<span class="hd ${n ? 'has' : ''} ${n > 1 ? 'many' : ''}" title="${i === 0 ? 'today' : 'in ' + i + ' days'}: ${n} closing">${n ? `<em>${n}</em>` : ''}</span>`);
-      }
-      return days.join('');
-    })()}</div></div>` : ''}
+    <div class="td-heat"><div class="q-grp">Next 21 days</div>
+      <div class="heat-strip" role="img" aria-label="${(() => {
+        const n = all.filter((p) => { const d = pipeDays(p); return d != null && d >= 0 && d <= 21; }).length;
+        return n ? `${n} ${n === 1 ? 'deadline' : 'deadlines'} in the next 21 days` : 'No deadlines in the next 21 days';
+      })()}">${(() => {
+        const days = [];
+        for (let i = 0; i < 21; i++) {
+          const n = all.filter((p) => pipeDays(p) === i).length;
+          days.push(`<span class="hd ${n ? 'has' : ''} ${n > 1 ? 'many' : ''}" title="${i === 0 ? 'today' : 'in ' + i + ' days'}: ${n} closing"></span>`);
+        }
+        return days.join('');
+      })()}</div></div>` : ''}
+    ${upcoming.length ? `<details class="td-later"><summary>Coming up <em>${upcoming.length}</em></summary>
+      ${upcoming.slice(0, 8).map((r) => `<div class="nf-row up"><span class="nf-ic">${ic('bell', 14)}</span>
+        <div class="nf-m"><b>${esc(r.title)}</b><i>${r.kind === 'opens' ? 'window opens' : 'deadline nudge'} · ${new Date(r.due).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</i></div>
+        <button class="icbtn" data-ic="x" onclick="clearReminder('${r.oppId}')" aria-label="Remove reminder"></button></div>`).join('')}</details>` : ''}
+    ${missed ? `<div class="td-missed"><span>${ic('x', 14)}</span>
+      <div><b>${esc(shortTitle(missed.snap))}</b><i>${esc(missed._risk)}</i></div>
+      <button class="pill pill-ghost pill-sm" onclick="closeDash();goV('discover')">Find the next cycle</button>
+      <button class="icbtn" data-ic="x" onclick="dismissMissed('${missed.id}')" aria-label="Dismiss"></button></div>` : ''}
     ${!tracked && !S.demo ? `<div class="td-demo">${ic('spark', 15)}
       <div><b>Want to see this full?</b><i>Load a sample pipeline built from real live listings — nothing is saved to this device.</i></div>
       <button class="pill pill-ghost pill-sm" onclick="seedDemo()">Preview with sample data</button></div>` : ''}`;
@@ -4139,35 +4223,6 @@ function pathSteps(p) {
     { t: 'Result', done: i >= 3, now: i === 3 },
   ];
 }
-function dashPaths() {
-  const items = Object.values(S.pipe).filter((p) => p.snap).sort((a, b) => (a.snap.deadline_ts || 9e9) - (b.snap.deadline_ts || 9e9));
-  if (!items.length) return dashEmpty('paths');
-  const risks = new Map(atRiskItems().map((r) => [r.id, r._risk]));
-  return `<h2 class="dash-h">Paths</h2><p class="dash-sub">Everything you are pursuing, as journeys — soonest gate first.</p>
-    <div class="path-list">${items.map((p) => {
-      const o = pipeOpp(p); if (!o) return '';
-      const stg = STAGES.find((s) => s.v === p.stage) || STAGES[0];
-      const risk = risks.get(p.id);
-      const dl = o.days_left != null && o.days_left < 900 ? o.days_left : null;
-      const steps = pathSteps(p);
-      return `<div class="path-row ${risk ? 'risk' : ''}">
-        <span class="pr-img">${o.imgThumb || o.img ? `<img src="${esc(o.imgThumb || o.img)}" onerror="this.style.display='none'">` : ic('cap', 18)}</span>
-        <div class="pr-main">
-          <div class="pr-t">${esc(shortTitle(o))}<span class="pr-org">${esc(o.org || '')}</span></div>
-          <div class="pr-steps">${steps.map((s, i) => `<span class="prs ${s.done ? 'done' : ''} ${s.now ? 'now' : ''}">${s.t}</span>${i < steps.length - 1 ? '<i class="prs-line"></i>' : ''}`).join('')}</div>
-          ${risk ? `<div class="pr-risk">${ic('clock', 12)} At risk — ${risk}</div>` : ''}
-        </div>
-        <div class="pr-side">
-          <span class="stage-pill" style="--sc:${stg.col}">${stg.t}</span>
-          ${dl != null ? `<i class="pr-dl ${dl <= 7 ? 'hot' : ''}">${dl <= 0 ? 'closing' : dl + 'd left'}</i>` : ''}
-        </div>
-        <div class="pr-acts">
-          <button class="pill pill-dark pill-sm" onclick="closeDash();startApply('${p.id}')">${p.stage === 'saved' ? 'Start' : 'Continue'}</button>
-          <button class="icbtn" data-ic="orb" onclick="closeDash();attachOpp('${p.id}');goV('agent')" aria-label="Ask Scout"></button>
-        </div>
-      </div>`;
-    }).join('')}</div>`;
-}
 /* Tracking — the full ledger with Vanilla status discipline */
 function dashTracking() {
   const all = Object.values(S.pipe).filter((p) => p.snap);
@@ -4175,7 +4230,7 @@ function dashTracking() {
   const logHTML = log.length ? `<div class="dt-log"><div class="dtl-h">${ic('zap', 13)} Scout's recent work</div>${log.map((j) => `
       <div class="dtl-row"><span class="dtl-st ${j.status}">${j.status === 'running' ? '<i class="spin2"></i>' : j.status === 'failed' ? '✕' : j.status === 'done' ? '✓' : '·'}</span>
       <span class="dtl-t">${esc(j.label || j.kind || 'job')}</span><i>${new Date(j.updatedAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</i>
-      ${j.status === 'failed' ? `<button class="pill pill-ghost pill-sm" onclick="retryAgentJob('${j.id}')">Retry</button>` : ''}</div>`).join('')}</div>` : '';
+      ${j.status === 'failed' && j.oppId ? `<button class="pill pill-ghost pill-sm" onclick="retryAgentJob('${j.id}')">Retry</button>` : ''}</div>`).join('')}</div>` : '';
   // the agent log can be non-empty while the pipeline is empty, so it sits outside the guard
   if (!all.length) return `<h2 class="dash-h">Tracking</h2>${logHTML}${dashEmpty('tracking')}`;
 
@@ -4192,7 +4247,7 @@ function dashTracking() {
     const o = pipeOpp(p); if (!o) return '';
     const stg = STAGES.find((x) => x.v === p.stage) || STAGES[0];
     const d = pipeDays(p), heat = deadlineHeat(d), risk = risks.get(p.id);
-    const kept = !DATA.some((x) => String(x.id) === p.id);   // listing rotated out of the live feed
+    const kept = DATA.length && !DATA.some((x) => String(x.id) === p.id);   // listing rotated out of the live feed
     return `<div class="tt-row" onclick="closeDash();${o.type === 'Admission' ? `goV('admissions',{open:'${p.id}'})` : `openDetail('${p.id}')`}">
       <span class="stage-pill" style="--sc:${stg.col}">${stg.t}</span>
       <span class="tt-t">${esc(shortTitle(o))}${kept ? '<em class="tt-kept" title="No longer in the live feed — Scout kept your copy">kept</em>' : ''}</span>
@@ -4241,16 +4296,16 @@ function setMasterInline(el, f) {
 }
 /* Uploads and AI extraction land wherever the user is actually looking. */
 function refreshDossier() {
-  if (dashLive()) { if (S.dashSec === 'dossier') renderDash('dossier'); else renderDashNav(); return; }
+  if (dashLive()) { if (S.dashSec === 'details') renderDash('details'); else renderDashNav(); return; }
   if (S.view === 'profile') renderProfile();
 }
-function dashDossier() {
+function dashDetails() {
   const mc = masterCompleteness();
   const nudge = masterNudge();
   const docs = Object.entries(S.docsIdx || {});
-  if (dossierBlank()) return `<h2 class="dash-h">Dossier</h2>${dashEmpty('dossier')}`;
+  if (dossierBlank()) return `<h2 class="dash-h">Your details</h2>${dashEmpty('details')}`;
   const open = MASTER_SECTIONS.find((x) => x.id === S.dosOpen) || MASTER_SECTIONS[0];
-  return `<h2 class="dash-h">Dossier</h2>
+  return `<h2 class="dash-h">Your details</h2>
     <p class="dash-sub">Everything Scout knows and files on your behalf. Edit anything here — it saves as you go.</p>
     <div class="dos-mc"><div class="mc-bar" id="dos-mc"><i style="width:${mc.pct}%"></i></div>
       <span id="dos-mc-l">${mc.pct}% complete</span></div>
@@ -4258,7 +4313,7 @@ function dashDossier() {
       <button class="pill pill-dark pill-sm" onclick="closeDash();${nudge[2]}">Do it</button></div>` : ''}
     <div class="dos-chips">${MASTER_SECTIONS.map((sec) => {
       const filled = sec.fields.filter((f) => String(S.master[f[0]] || '').trim()).length;
-      return `<button class="dos-chip ${S.dosOpen === sec.id ? 'on' : ''}" data-sec="${sec.id}" onclick="S.dosOpen='${sec.id}';renderDash('dossier')">${ic(sec.icn, 14)}${sec.t}<em>${filled}/${sec.fields.length}</em></button>`;
+      return `<button class="dos-chip ${S.dosOpen === sec.id ? 'on' : ''}" data-sec="${sec.id}" onclick="S.dosOpen='${sec.id}';renderDash('details')">${ic(sec.icn, 14)}${sec.t}<em>${filled}/${sec.fields.length}</em></button>`;
     }).join('')}</div>
     <div class="dos-fields">${open.fields.map(([f, lab, type, opts]) => `
       <label class="dosf ${String(S.master[f] || '').trim() ? 'has' : ''}"><span>${lab}</span>
@@ -4267,46 +4322,41 @@ function dashDossier() {
           : `<input type="${type}" value="${esc(S.master[f] || '')}" onchange="setMasterInline(this,'${f}')">`}
         <i class="dosf-ok">${ic('check', 12)}</i>
       </label>`).join('')}</div>
-    <div class="q-grp" style="margin-top:28px">The rest of your record</div>
-    <div class="dos-grid">
-      <button class="dos-card" onclick="closeDash();goV('profile',{scrollTo:'#ps-essays'})">${ic('pen', 16)}<b>Essay bank</b><i>${mc.essays}/${ESSAY_BANK.length} written</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
-      <button class="dos-card" onclick="closeDash();goV('profile',{scrollTo:'#ps-docs'})">${ic('upload', 16)}<b>Documents</b><i>${docs.length} on file${docs.length ? ' · ' + docs.filter(([, d]) => d.kind).length + ' AI-read' : ''}</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
-      <button class="dos-card" onclick="closeDash();goV('profile',{scrollTo:'#ps-links'})">${ic('link', 16)}<b>Links & portfolios</b><i>${((S.master || {}).links || []).length} connected</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
-      <button class="dos-card" onclick="closeDash();goV('profile',{scrollTo:'#ps-acct'})">${ic('shield', 16)}<b>Your data</b><i>On this device · backup &amp; restore</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
+    <div class="psec" id="ps-essays"><h3>Essay bank</h3>
+      <p class="psec-sub">Write (or draft) each once — Scout adapts them per application instead of starting from zero.</p>
+      ${ESSAY_BANK.map(([k, lab, max, hint]) => `<div class="ap-q">
+        <div class="ap-qh"><span class="ap-ql">${lab}</span>
+          ${AI_ENABLED ? `<button class="pill pill-ghost pill-sm" id="es-${k}" onclick="draftEssay('${k}',${max})">${ic('spark', 12)} Draft with Scout</button>` : ''}
+        </div>
+        <div class="ap-hint">${hint}</div>
+        <textarea id="ma-${k}" maxlength="${max}" placeholder="Your words beat perfect words…" onchange="setMaster('${k}',this.value)" oninput="this.nextElementSibling.textContent=this.value.length+' / ${max}'">${esc(S.master[k] || '')}</textarea>
+        <div class="ap-count">${String(S.master[k] || '').length} / ${max}</div>
+      </div>`).join('')}
     </div>
+
+    <div class="psec" id="ps-docs"><h3>Documents</h3>
+      <p class="psec-sub">Uploaded once, auto-fitted to what each form demands (size, format, dimensions), and kept in this browser only — nothing is uploaded anywhere. Marksheets are read by Scout to fill your academics.</p>
+      <div class="doc-grid">${[...Object.keys(DOC_LABELS), ...Object.keys(S.docsIdx || {}).filter((s) => /^cert-/.test(s))].map((slot) => { const have = (S.docsIdx || {})[slot]; return `
+        <div class="doc-cell ${have ? 'have' : ''}" id="doc-${slot}">
+          <div class="dc-top">${ic(have ? 'check' : 'upload', 16)}<b>${esc(docLabel(slot))}</b></div>
+          <i class="dc-spec">${have && have.summary ? esc(have.summary.slice(0, 80)) : docSpec(slot).label}</i>
+          ${have ? `<i class="dc-meta">${esc(have.name).slice(0, 26)} · ${Math.round((have.bytes || 0) / 1024)}KB</i>
+            <div class="dc-acts"><button onclick="downloadDoc('${slot}')">${ic('download', 13)}</button><label class="dc-re">${ic('refresh', 13)}<input type="file" accept="image/*,.pdf" hidden onchange="uploadDoc('${slot}',this)"></label><button onclick="deleteDoc('${slot}')">${ic('x', 13)}</button></div>`
+          : `<label class="dc-up">${ic('plus', 14)} Upload<input type="file" accept="image/*,.pdf" hidden onchange="uploadDoc('${slot}',this)"></label>`}
+        </div>`; }).join('')}
+        <label class="doc-cell add-cert">
+          <div class="dc-top">${ic('plus', 16)}<b>Add a certificate</b></div>
+          <i class="dc-spec">Awards, NCC/NSS, sports, languages, anything — Scout reads, classifies and uses it</i>
+          <input type="file" accept="image/*,.pdf" hidden onchange="addCert(this)">
+        </label></div>
+    </div>
+
+    ${linksPanelHTML()}
+    <button class="dos-card solo" onclick="goProfile('#ps-acct')">${ic('shield', 16)}<b>Your data</b><i>Everything here lives in this browser · back up or restore</i><span class="dos-go">${ic('arrow-right', 13)}</span></button>
     ${docs.length ? `<div class="q-grp" style="margin-top:26px">What your documents prove</div>
       <div class="dos-docs">${docs.filter(([, d]) => d.summary).map(([slot, d]) => `<div class="dosd"><b>${esc(d.kind || docLabel(slot))}</b><i>${esc(d.summary)}</i></div>`).join('') || '<div class="dash-sub">Upload marksheets &amp; certificates — Scout reads them and files what they prove.</div>'}</div>` : ''}`;
 }
-function dashNotifs() {
-  const all = notifs();
-  const upcoming = reminders().filter((r) => !r.done).sort((a, b) => a.due - b.due);
-  const log = agentLog();
-  const fails = log.filter((j) => j.status === 'failed');
-  if (!all.length && !upcoming.length && !fails.length) return `<h2 class="dash-h">Notifications</h2>${dashEmpty('notifications')}`;
-  // logAgent already pushNotifs every failure, so don't repeat those rows in Activity
-  const failIds = new Set(fails.map((j) => j.oppId).filter(Boolean));
-  const activity = all.filter((n) => !(n.kind === 'agent' && failIds.has(n.oppId)));
-  const shown = activity.slice(0, S.notifLim);
-  return `<h2 class="dash-h">Notifications</h2><p class="dash-sub">Reminders, receipts, and anything that needs you. Interruptions stay rare.</p>
-    ${upcoming.length ? `<div class="q-grp">Coming up <em>${upcoming.length}</em></div>${upcoming.slice(0, 8).map((r) => `<div class="nf-row up"><span class="nf-ic">${ic('bell', 14)}</span><div class="nf-m"><b>${esc(r.title)}</b><i>${r.kind === 'opens' ? 'window opens' : 'deadline nudge'} · ${new Date(r.due).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</i></div><button class="icbtn" data-ic="x" onclick="clearReminder('${r.oppId}')" aria-label="Remove"></button></div>`).join('')}` : ''}
-    ${fails.length ? `<div class="q-grp">Needs retry <em>${fails.length}</em></div>${fails.map((j) => `<div class="nf-row agent"><span class="nf-ic">✕</span><div class="nf-m"><b>${esc(j.label || 'Agent job')}</b><i>${esc(j.detail || '')} Nothing was sent.</i></div><button class="pill pill-ghost pill-sm" onclick="retryAgentJob('${j.id}')">Retry</button></div>`).join('')}` : ''}
-    ${shown.length ? `<div class="q-grp">Activity</div>${shown.map((n) => `<div class="nf-row ${n.kind}"><span class="nf-ic">${ic(n.kind === 'agent' ? 'zap' : n.kind === 'reminder' ? 'bell' : 'check', 14)}</span>
-      <div class="nf-m"><b>${esc(n.title)}</b><i>${esc(n.body)}</i></div><time>${new Date(n.ts).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</time></div>`).join('')}
-      ${activity.length > shown.length ? `<button class="pill pill-ghost" style="margin-top:14px" onclick="S.notifLim+=25;renderDash('notifications')">Show ${Math.min(25, activity.length - shown.length)} more</button>` : ''}` : ''}`;
-}
 /* Scout AI — the Claude-suite layout, powered by the existing agent (moved, not cloned) */
-function dashChat(el) {
-  el.innerHTML = '<div class="dc-host" id="dc-host"></div>';
-  const vw = document.getElementById('vw-agent');
-  // ensureAgentDOM is gated on dataset.built; if the shell was moved here and then
-  // destroyed by a re-render, clear the flag so it actually rebuilds.
-  if (!vw.querySelector('.agent-shell')) delete vw.dataset.built;
-  ensureAgentDOM();
-  const shell = vw.querySelector('.agent-shell') || document.querySelector('.agent-shell');
-  if (shell) document.getElementById('dc-host').appendChild(shell);
-  if (S.chat.length === 0) initChat('general', null);
-  fitAgent();
-}
 
 function show(id) { document.querySelectorAll('.screen').forEach((s) => s.classList.toggle('on', s.id === id)); }
 function migrate() {
@@ -4478,13 +4528,13 @@ function menuContent(v) {
     const risky = Object.values(S.pipe).filter((x) => x.snap && x.stage === 'saved' && x.snap.deadline_ts && (x.snap.deadline_ts * 1000 - Date.now()) / 864e5 <= 7).slice(0, 4);
     return `<div class="menu-col"><div class="menu-h">Needs your attention</div>
       ${risky.length ? risky.map((x) => `<button class="menu-it" onclick="openDetail('${x.id}')"><span class="mic">${ic('clock', 15)}</span>${esc(shortTitle(x.snap).slice(0, 28))} — closing</button>`).join('') : '<div class="menu-empty">Nothing urgent. Saved deadlines will surface here.</div>'}
-      <button class="menu-it" onclick="goV('scouted',{scrollTo:'#sc-risk'})"><span class="mic">${ic('bookmark', 15)}</span>Open my pipeline</button></div>`;
+      <button class="menu-it" onclick="openDash('tracking')"><span class="mic">${ic('bookmark', 15)}</span>Open my pipeline</button></div>`;
   }
   if (v === 'settings') {
     return `<div class="menu-col"><div class="menu-h">Settings</div>
-      <button class="menu-it" onclick="goV('profile',{scrollTo:'#ps-master'})"><span class="mic">${ic('doc', 15)}</span>Application profile</button>
-      <button class="menu-it" onclick="goV('profile',{scrollTo:'#ps-docs'})"><span class="mic">${ic('upload', 15)}</span>Documents</button>
-      <button class="menu-it" onclick="goV('profile',{scrollTo:'#ps-prefs'})"><span class="mic">${ic('gear', 15)}</span>Preferences</button>
+      <button class="menu-it" onclick="openDash('details')"><span class="mic">${ic('doc', 15)}</span>Application profile</button>
+      <button class="menu-it" onclick="openDash('details')"><span class="mic">${ic('upload', 15)}</span>Documents</button>
+      <button class="menu-it" onclick="goV('profile',{scrollTo:'#ps-settings'})"><span class="mic">${ic('gear', 15)}</span>Preferences</button>
       <button class="menu-it" onclick="goV('profile',{scrollTo:'#ps-acct'})"><span class="mic">${ic('shield', 15)}</span>Account & sync</button></div>`;
   }
   if (v === 'account') {
