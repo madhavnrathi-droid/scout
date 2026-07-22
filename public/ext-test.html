@@ -1,49 +1,85 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"><title>Test college portal — Scout extension harness</title>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Scout — practice portal</title>
 <style>
-  body{font:15px/1.6 system-ui;background:#eef1f4;margin:0;padding:40px}
-  .form{max-width:640px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 4px 20px rgba(0,0,0,.08)}
-  h1{font-size:22px}
-  label{display:block;margin:14px 0 4px;font-weight:600;font-size:13px}
-  input,textarea,select{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font:inherit;box-sizing:border-box}
-  button{margin-top:20px;padding:12px 24px;background:#1a56db;color:#fff;border:none;border-radius:8px;font:600 14px system-ui}
+  :root{color-scheme:light}
+  body{font:15px/1.6 system-ui;background:#eef1f4;margin:0;padding:32px 20px 120px}
+  .wrap{max-width:660px;margin:0 auto}
+  .note{background:#fff;border-radius:14px;padding:18px 22px;margin-bottom:20px;box-shadow:0 4px 20px rgba(0,0,0,.06);font-size:13.5px;color:#334}
+  .note b{color:#111}
+  .note .go{display:inline-flex;align-items:center;gap:9px;margin-top:14px;padding:12px 20px;background:#101010;color:#fff;border:none;border-radius:12px;font:600 14px system-ui;cursor:pointer}
+  .note .go svg{width:18px;height:18px}
+  .form{background:#fff;border-radius:14px;padding:30px;box-shadow:0 4px 20px rgba(0,0,0,.08)}
+  h1{font-size:21px;margin:0 0 4px}
+  .sub{color:#667;font-size:13px;margin:0 0 20px}
+  label{display:block;margin:16px 0 5px;font-weight:600;font-size:13px;color:#233}
+  input,textarea,select{width:100%;padding:11px;border:1px solid #ccd;border-radius:9px;font:inherit;box-sizing:border-box;background:#fff}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:#101010}
+  .row{display:flex;gap:14px}.row>div{flex:1}
+  .warn{font-size:11px;color:#a06;font-weight:600}
+  button.submit{margin-top:24px;padding:13px 26px;background:#1a56db;color:#fff;border:none;border-radius:9px;font:600 14px system-ui;cursor:pointer;width:100%}
 </style>
 </head>
 <body>
-<div class="form">
-  <h1>Institute of Technology — Application Form 2027</h1>
-  <label for="fname">First Name</label><input id="fname" name="first_name">
-  <label for="lname">Last Name</label><input id="lname" name="last_name">
-  <label for="em">Email Address</label><input id="em" type="email" name="email">
-  <label for="ph">Mobile Number</label><input id="ph" name="mobile">
-  <label for="dob">Date of Birth</label><input id="dob" name="dob" placeholder="YYYY-MM-DD">
-  <label for="father">Father's Name</label><input id="father" name="father_name">
-  <label for="b12">Class 12 Board</label><input id="b12" name="class12_board">
-  <label for="p12">Class 12 Percentage</label><input id="p12" name="class12_percent">
-  <label for="clg">College / University</label><input id="clg" name="college_name">
-  <label for="cg">CGPA</label><input id="cg" name="cgpa">
-  <label for="gh">GitHub Profile</label><input id="gh" name="github_url">
-  <label for="sop">Statement of Purpose</label><textarea id="sop" name="sop" rows="4"></textarea>
-  <label for="pw">Portal Password (never touched by Scout)</label><input id="pw" type="password" name="password">
-  <button type="button">Submit application</button>
+<div class="wrap">
+  <div class="note">
+    This is a <b>practice form</b> — no real application, nothing is sent anywhere. Watch Scout fill a form once
+    before you trust it on a real portal. Scout fills only fields it recognises, stops at the password, and
+    <b>never touches the submit button</b> — that stays yours.
+    <br>
+    <button class="go" id="watch"><svg viewBox="0 0 24 24" fill="#FF3F6C"><path d="M12 21.2s-7.6-4.6-9.9-9.4C.7 8.3 2.4 4.8 5.8 4.3 8 3.95 10 5 12 7.3c2-2.3 4-3.35 6.2-3 3.4.5 5.1 4 3.7 7.5C19.6 16.6 12 21.2 12 21.2z"/></svg>Watch Scout apply</button>
+  </div>
+
+  <form class="form" onsubmit="return false">
+    <h1>Institute of Technology — Application 2027</h1>
+    <p class="sub">B.Tech admissions · fill every field marked required</p>
+    <div class="row">
+      <div><label for="fname">First Name</label><input id="fname" name="first_name" autocomplete="off"></div>
+      <div><label for="lname">Last Name</label><input id="lname" name="last_name" autocomplete="off"></div>
+    </div>
+    <label for="em">Email Address</label><input id="em" type="email" name="email" autocomplete="off">
+    <div class="row">
+      <div><label for="ph">Mobile Number</label><input id="ph" name="mobile" autocomplete="off"></div>
+      <div><label for="dob">Date of Birth</label><input id="dob" name="dob" placeholder="YYYY-MM-DD" autocomplete="off"></div>
+    </div>
+    <label for="father">Father's Name</label><input id="father" name="father_name" autocomplete="off">
+    <div class="row">
+      <div><label for="b12">Class 12 Board</label><input id="b12" name="class12_board" autocomplete="off"></div>
+      <div><label for="p12">Class 12 Percentage</label><input id="p12" name="class12_percent" autocomplete="off"></div>
+    </div>
+    <label for="clg">College / University</label><input id="clg" name="college_name" autocomplete="off">
+    <div class="row">
+      <div><label for="cg">CGPA</label><input id="cg" name="cgpa" autocomplete="off"></div>
+      <div><label for="grad">Graduation Year</label><input id="grad" name="grad_year" autocomplete="off"></div>
+    </div>
+    <label for="cat">Category</label>
+    <select id="cat" name="category"><option value="">Select…</option><option>General</option><option>OBC-NCL</option><option>SC</option><option>ST</option></select>
+    <label for="gh">GitHub Profile</label><input id="gh" name="github_url" autocomplete="off">
+    <label for="sop">Statement of Purpose</label><textarea id="sop" name="sop" rows="4"></textarea>
+    <label for="pw">Portal Password <span class="warn">— Scout never touches this</span></label>
+    <input id="pw" type="password" name="password" autocomplete="off">
+    <button type="button" class="submit" onclick="alert('This is a practice form — a real submit is always your click.')">Submit application</button>
+  </form>
 </div>
+
 <script>
-// ── harness: emulate chrome.storage with the same data shape sync.js writes ──
-window.__scoutHarness = true;
-window.chrome = { storage: { local: {
-  get(key, cb) {
-    const grab = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } };
-    cb({ scoutData: {
-      master: grab('scout-master') || { firstName: 'Riya', lastName: 'Sharma', dob: '2009-03-14', phone: '9876543210', fatherName: 'Rakesh Sharma', board12: 'CBSE', pct12: '92', college: 'BITS Pilani', cgpa: '8.1', github: 'https://github.com/riyacodes', personalStatement: 'I build ML tools for Indian classrooms — gradeflow auto-grades handwritten sheets; vidyaqa runs offline for low-bandwidth schools.' },
-      kit: grab('scout-kit') || { email: 'riya@bits-pilani.ac.in' },
-      profile: grab('scout-profile') || {},
-      user: { name: 'Riya Sharma', email: 'riya@bits-pilani.ac.in' },
-    } });
+// The harness supplies a dossier the way chrome.storage would, so the REAL fill.js
+// runs unmodified against this page. __scoutHarness IS the data object.
+window.__scoutHarness = {
+  user: { name: 'Riya Sharma', email: 'riya.sharma@college.ac.in' },
+  profile: { institution: 'IIT Madras', gradYear: '2027', cgpa: '8.6', city: 'Chennai' },
+  master: {
+    firstName: 'Riya', lastName: 'Sharma', email: 'riya.sharma@college.ac.in', phone: '+91 98765 43210',
+    dob: '2006-04-12', fatherName: 'Anil Sharma', board12: 'CBSE', pct12: '94.2', category: 'OBC-NCL',
+    college: 'IIT Madras', cgpa: '8.6', gradYear: '2027', github: 'github.com/riyasharma',
+    personalStatement: 'I build things that make hard problems feel approachable — a Tamil-first study app my classmates still use, and a flood-alert bot for my neighbourhood. I want four years to go deeper on systems that reach the people usually last to get good tools.',
   },
-} } };
+  kit: {},
+};
+document.getElementById('watch').onclick = () => window.__scoutAgent && window.__scoutAgent.open();
 </script>
-<script src="/extension/fill.js?v=2"></script>
+<script src="/extension/fill.js?v=5"></script>
 </body>
 </html>

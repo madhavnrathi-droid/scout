@@ -1792,3 +1792,20 @@ body.has-cursor .cursor{display:block}
   .tt-risk .tt-heat{font-size:12px}
 }
 .dos-card.solo{width:100%;margin-top:28px}
+
+/* ═══════════ APPLY WITH SCOUT — mission-control explainer ═══════════ */
+.aws{padding:4px 2px}
+.aws-head{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.aws-heart .heart-img{height:30px}
+.aws-head b{display:block;font-size:17px;letter-spacing:-.02em}
+.aws-head i{display:block;font-style:normal;font-size:12.5px;color:var(--ink3);margin-top:2px}
+.aws-steps{list-style:none;margin:0 0 20px;padding:0;display:flex;flex-direction:column;gap:14px}
+.aws-steps li{display:flex;gap:13px;align-items:flex-start}
+.aws-steps li>span{flex:0 0 auto;width:24px;height:24px;border-radius:50%;background:var(--ink);color:var(--card);font-size:12px;font-weight:600;display:grid;place-items:center;margin-top:1px}
+.aws-steps b{display:block;font-size:13.5px;font-weight:600}
+.aws-steps i{display:block;font-style:normal;font-size:12px;color:var(--ink2);margin-top:2px;line-height:1.5}
+.pill.wide{width:100%;justify-content:center}
+.aws-2nd{display:block;width:100%;text-align:center;background:none;border:none;color:var(--ink2);font:inherit;font-size:12.5px;padding:11px 0 3px;cursor:pointer;text-decoration:none}
+.aws-2nd:hover{color:var(--ink)}
+.aws-install{display:flex;gap:9px;align-items:flex-start;padding:11px 13px;border-radius:11px;background:color-mix(in srgb,#5B7FE8 8%,var(--card));font-size:11.5px;color:var(--ink2);line-height:1.5;margin-bottom:12px}
+.aws-fine{text-align:center;font-size:10.5px;color:var(--ink3);margin-top:14px}

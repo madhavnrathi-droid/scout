@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Scout Autofill",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Fills application forms \u2014 college portals, Google Forms, career pages \u2014 from your Scout profile. One click. Never auto-submits.",
   "permissions": [
     "storage"

@@ -2,6 +2,8 @@
 // so the fill script works on any site — no servers, no tokens, your data stays local.
 (function () {
   try {
+    // announce presence so the Scout PWA can adapt the "apply with Scout" flow
+    document.documentElement.setAttribute('data-scout-ext', '1.2.0');
     const grab = (k) => { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch { return null; } };
     const data = {
       master: grab('scout-master') || {},

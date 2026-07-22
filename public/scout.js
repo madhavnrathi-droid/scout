@@ -1585,6 +1585,41 @@ function sheet(html) {
 }
 function closeSheet() { const el = document.getElementById('sheet'); if (el) el.classList.remove('on'); }
 
+/* ═══════════ APPLY WITH SCOUT — the supervised browser agent ═══════════
+   Scout can't reach another site's tab from the PWA sandbox, so the agent lives
+   in the browser extension. This surface explains the flow, hands off to the
+   portal, and — crucially — lets a student watch it work once on a practice form
+   before trusting it on a real application. The agent NEVER submits; that's the
+   whole trust position. */
+function scoutExt() { return document.documentElement.getAttribute('data-scout-ext') || null; }
+function applyWithScout(id) {
+  const o = resolveOpp(id);
+  if (!o) return toast('That listing is no longer available');
+  const has = scoutExt();
+  const url = esc(o.source_url || '');
+  const site = esc(o.display_url || 'the portal');
+  sheet(`
+    <div class="aws">
+      <div class="aws-head">
+        <span class="aws-heart">${heartSVG()}</span>
+        <div><b>Let Scout fill it</b><i>${has ? 'The Scout agent is installed and ready.' : 'Scout fills the form while you watch — you review and submit.'}</i></div>
+      </div>
+      <ol class="aws-steps">
+        <li><span>1</span><div><b>Open ${site}</b><i>The application form, in a new tab.</i></div></li>
+        <li><span>2</span><div><b>Scout takes over — visibly</b><i>It dims the page, walks field by field filling from your details, and narrates each step. Stop it any time.</i></div></li>
+        <li><span>3</span><div><b>You review and submit</b><i>Scout stops at the review. Passwords, payments and OTPs are never touched. The final click is always yours.</i></div></li>
+      </ol>
+      ${has
+        ? `<button class="pill pill-red pill-lg wide" onclick="closeSheet();window.open('${url}','_blank')">Open ${site} &amp; let Scout fill it ${ic('arrow-up-right', 15)}</button>
+           <button class="aws-2nd" onclick="closeSheet();window.open('/ext-test.html','_blank')">Try it on a practice form first →</button>`
+        : `<div class="aws-install">${ic('help', 14)} <span>The one-time browser add-on isn't installed yet. It runs entirely on your machine — no account, nothing uploaded.</span></div>
+           <button class="pill pill-dark pill-lg wide" onclick="downloadExtension()">${ic('download', 15)} Get the Scout add-on</button>
+           <button class="aws-2nd" onclick="closeSheet();window.open('/ext-test.html','_blank')">Watch it work on a practice form →</button>
+           <a class="aws-2nd" href="${url}" target="_blank" rel="noopener" onclick="closeSheet()">Or just open ${site} and fill it yourself →</a>`}
+      <div class="aws-fine">Scout never submits, pays, or confirms — and never runs where you can't see it.</div>
+    </div>`);
+}
+
 /* ═══════════ DETAIL — full competition page ═══════════ */
 function detailSpecs(o, urgent) {
   // type-specific spec sheet, Ledgerix hairline rows
@@ -1777,7 +1812,8 @@ function openDetail(id) {
       <div class="det-side"><div class="det-sticky">
         <div class="det-img ${o.realImg ? 'contain' : ''}">${o.realImg ? `<img class="blurfill" src="${esc(o.img)}" alt="" aria-hidden="true">` : ''}<img class="mainimg" src="${esc(o.realImg ? o.img : (o.imgThumb || o.img))}" alt="${esc(o.title)}" onerror="this.src='${esc(o.img)}'"><span class="tagchip">${o.realImg ? 'Official banner' : o.imgThumb ? 'From ' + esc(o.display_url) : o.type}</span></div>
         <div class="det-cta">
-          <button class="pill pill-red pill-lg" onclick="window.open('${esc(o.source_url)}','_blank')">Apply on ${esc(o.display_url || 'source')} ${ic('arrow-up-right', 15)}</button>
+          <button class="pill pill-red pill-lg" onclick="applyWithScout('${o.id}')">${ic('spark', 15)} Let Scout fill it</button>
+          <button class="pill pill-ghost" onclick="window.open('${esc(o.source_url)}','_blank')">Open ${esc(o.display_url || 'source')} yourself ${ic('arrow-up-right', 14)}</button>
           <div class="rowx">
             ${AI_ENABLED
               ? `<button class="pill pill-dark" onclick="startApply('${o.id}')">${ic('spark', 14)} Apply with AI</button>`
