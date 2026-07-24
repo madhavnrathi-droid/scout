@@ -1809,3 +1809,8 @@ body.has-cursor .cursor{display:block}
 .aws-2nd:hover{color:var(--ink)}
 .aws-install{display:flex;gap:9px;align-items:flex-start;padding:11px 13px;border-radius:11px;background:color-mix(in srgb,#5B7FE8 8%,var(--card));font-size:11.5px;color:var(--ink2);line-height:1.5;margin-bottom:12px}
 .aws-fine{text-align:center;font-size:10.5px;color:var(--ink3);margin-top:14px}
+
+/* board island fills the dashboard main column; React Flow positions absolutely inside */
+#vw-board{position:relative;flex:1;min-height:0;overflow:hidden}
+.board-fail{display:grid;place-items:center;height:100%;color:var(--ink3);font-size:14px;gap:10px}
+.dash-switch .dsw-it[data-sec]{}

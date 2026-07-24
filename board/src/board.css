@@ -1,0 +1,105 @@
+/* Scout board — React Flow in Scout's editorial palette.
+   Timeline canvas · event nodes · right-panel StateCard. Light + dark. */
+.board-wrap{
+  --canvas:#F2F1EC; --paper:#FCFCFA; --ink:#101010; --ink2:#4A4842; --ink3:#8A887F;
+  --hair:#E4E1D6; --red:#FF4B2E; --red-deep:#C41E2A; --rose:#FF3F6C;
+  --amber:#B8791F; --blue:#5B7FE8; --green:#1F7A47;
+  --bg-dot:#DED9CC; --sel:#101010;
+  position:absolute; inset:0; background:var(--canvas);
+  font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; color:var(--ink);
+}
+/* Scout is a light app today; the board matches it. Dark tokens ship behind an
+   explicit opt-in (data-theme="dark" on the wrap) for when Scout gains a toggle —
+   NOT prefers-color-scheme, which would mismatch the light dashboard around it. */
+.board-wrap[data-theme="dark"]{--canvas:#15140E; --paper:#1E1C15; --ink:#EDEAE0; --ink2:#B4B0A4; --ink3:#807D72;
+  --hair:#2C2A21; --bg-dot:#2A2820; --sel:#EDEAE0; --red:#FF6A50; --rose:#FF6B8E;}
+.board-wrap :focus-visible{outline:2px solid var(--red); outline-offset:2px}
+
+/* React Flow surface tweaks */
+.board-wrap .react-flow__attribution{display:none}
+.board-wrap .react-flow__controls{box-shadow:0 6px 24px rgba(16,16,16,.12); border-radius:10px; overflow:hidden}
+.board-wrap .react-flow__controls-button{background:var(--paper); border-bottom:1px solid var(--hair); color:var(--ink)}
+.board-wrap .react-flow__minimap{border-radius:10px; box-shadow:0 6px 24px rgba(16,16,16,.12); background:var(--paper)}
+.board-wrap .react-flow__node.selected .opp-node{box-shadow:0 0 0 2px var(--sel), 0 12px 34px rgba(16,16,16,.16)}
+.board-wrap .react-flow__handle{width:8px; height:8px; background:var(--ink3); border:2px solid var(--paper); opacity:0; transition:opacity .15s}
+.board-wrap .react-flow__node:hover .react-flow__handle{opacity:1}
+
+/* ── the opportunity node ── */
+.opp-node{width:206px; background:var(--paper); border:1px solid var(--hair); border-radius:14px;
+  padding:12px 13px 11px; box-shadow:0 1px 2px rgba(16,16,16,.04),0 8px 24px rgba(16,16,16,.06);
+  position:relative; overflow:hidden; cursor:grab; transition:box-shadow .16s, transform .16s}
+.opp-node:active{cursor:grabbing}
+.opp-node.sel{box-shadow:0 0 0 2px var(--sel),0 12px 34px rgba(16,16,16,.16)}
+.opp-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+.opp-stage{font-size:9.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; padding:3px 8px; border-radius:99px}
+.opp-stage.s-saved{background:#EFEDE6; color:var(--ink3)}
+.opp-stage.s-draft{background:color-mix(in srgb,var(--amber) 15%,var(--paper)); color:var(--amber)}
+.opp-stage.s-applied{background:color-mix(in srgb,var(--blue) 15%,var(--paper)); color:var(--blue)}
+.opp-stage.s-result{background:color-mix(in srgb,var(--green) 15%,var(--paper)); color:var(--green)}
+.opp-match{font-size:11px; font-weight:600; color:var(--ink3); font-variant-numeric:tabular-nums}
+.opp-title{font-size:14px; font-weight:600; line-height:1.25; letter-spacing:-.01em;
+  display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
+.opp-org{font-size:11.5px; color:var(--ink3); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.opp-foot{display:flex; align-items:center; justify-content:space-between; margin-top:10px}
+.opp-heat{font-size:11px; color:var(--ink3); display:inline-flex; align-items:center; gap:5px}
+.opp-heat.h-now{color:var(--red-deep); font-weight:600}
+.opp-heat.h-soon{color:var(--amber); font-weight:500}
+.opp-heat.h-gone{color:var(--ink3); text-decoration:line-through}
+.opp-heat .dot{width:6px; height:6px; border-radius:50%; background:currentColor; display:inline-block}
+.opp-kept{font-size:9px; letter-spacing:.05em; text-transform:uppercase; color:var(--ink3); border:1px solid var(--hair); border-radius:99px; padding:1px 6px}
+.opp-prog{position:absolute; left:0; right:0; bottom:0; height:3px; background:var(--hair)}
+.opp-prog i{display:block; height:100%; background:var(--amber)}
+.opp-h{border-radius:50%}
+
+/* faint stage lanes behind the graph */
+.lanes{position:absolute; inset:0; pointer-events:none; z-index:0}
+.lane{position:absolute; left:16px; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink3); opacity:.5}
+.lane span{background:var(--canvas); padding:2px 6px}
+
+/* bottom toolbar */
+.board-bar{position:absolute; left:50%; bottom:18px; transform:translateX(-50%); z-index:6;
+  display:flex; align-items:center; gap:8px; background:var(--ink); color:var(--paper);
+  border-radius:14px; padding:8px 10px 8px 14px; box-shadow:0 14px 40px rgba(16,16,16,.28)}
+.bb{background:transparent; border:none; color:var(--paper); font:600 12.5px system-ui; cursor:pointer; padding:5px 10px; border-radius:9px; opacity:.85}
+.bb:hover{opacity:1; background:rgba(255,255,255,.12)}
+.bb-count{font-size:11px; opacity:.55; padding-left:4px}
+
+/* empty state */
+.board-empty{position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; max-width:340px; z-index:1}
+.board-empty b{display:block; font-size:17px; letter-spacing:-.01em}
+.board-empty p{font-size:13.5px; color:var(--ink3); margin-top:8px; line-height:1.55}
+
+/* ── the StateCard inspector ── */
+.insp{position:absolute; top:12px; right:12px; bottom:12px; width:320px; max-width:calc(100% - 24px); z-index:8;
+  background:var(--paper); border:1px solid var(--hair); border-radius:16px; box-shadow:0 20px 60px rgba(16,16,16,.22);
+  display:flex; flex-direction:column; overflow:hidden}
+.insp-head{display:flex; align-items:center; justify-content:space-between; padding:14px 16px 0}
+.insp-eyebrow{font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink3)}
+.insp-x{border:none; background:none; cursor:pointer; color:var(--ink3); font-size:15px; padding:2px 6px}
+.insp-title{font-size:18px; line-height:1.2; letter-spacing:-.02em; font-weight:650; margin:6px 16px 0}
+.insp-org{font-size:12px; color:var(--ink3); margin:4px 16px 0}
+.insp-org .cite{border-bottom:1px dotted var(--ink3); cursor:help}
+.insp-stages{display:flex; gap:5px; padding:14px 16px 4px; flex-wrap:wrap}
+.insp-stage{font-size:11px; font-weight:500; color:var(--ink2); background:var(--canvas); border:1px solid var(--hair); border-radius:99px; padding:6px 11px; cursor:pointer}
+.insp-stage.on{background:var(--ink); color:var(--paper); border-color:var(--ink)}
+.insp-sec{padding:12px 16px 0}
+.insp-sec-h{font-size:10px; letter-spacing:.09em; text-transform:uppercase; color:var(--ink3); margin-bottom:7px}
+.insp-rows{display:flex; flex-direction:column; gap:6px}
+.insp-row{display:flex; gap:8px; font-size:13px; line-height:1.4}
+.insp-row .rm{flex:0 0 auto; width:14px; text-align:center}
+.insp-row.t-ok .rm{color:var(--green)}
+.insp-row.t-warn .rm{color:var(--amber)}
+.insp-row.t-hot{color:var(--red-deep); font-weight:500}
+.insp-row.t-muted{color:var(--ink3)}
+.insp-empty{font-size:12.5px; color:var(--ink3); font-style:italic}
+.insp-actions{margin-top:auto; padding:14px 16px 16px; border-top:1px solid var(--hair); display:flex; flex-direction:column; gap:8px}
+.insp-btn{border:1px solid var(--hair); background:var(--paper); color:var(--ink); font:600 13px system-ui; padding:11px; border-radius:11px; cursor:pointer; flex:1}
+.insp-btn:hover{border-color:var(--ink3)}
+.insp-btn.primary{background:var(--red); color:#fff; border-color:var(--red)}
+.insp-btn-row{display:flex; gap:8px}
+
+@media (max-width:640px){
+  .insp{top:auto; bottom:0; left:0; right:0; width:auto; max-width:none; border-radius:16px 16px 0 0; max-height:72%}
+  .board-bar{bottom:auto; top:10px}
+}
+@media (prefers-reduced-motion:reduce){.opp-node{transition:none}}

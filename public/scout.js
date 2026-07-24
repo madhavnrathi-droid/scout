@@ -150,6 +150,7 @@ const S = {
   ledgerType: 'All', ledgerHorizon: 30, ledgerSort: 'prize',
   insightIdx: 0, insightTimer: null,
 };
+const SCOUT_V = 43;
 function ls(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch { return null; } }
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtIN = (n) => Number(n || 0).toLocaleString('en-IN');
@@ -498,7 +499,7 @@ function setSyncBadge(state) {
 }
 function resetDevice() {
   if (!confirm('This clears your profile, saves, drafts and documents from this browser. Export first if you want a backup. Continue?')) return;
-  try { ['scout-user','scout-profile','scout-pipe','scout-saved','scout-kit','scout-accounts','scout-threads','scout-master','scout-docsidx','scout-feed-cache','scout-notifs','scout-reminders','scout-agentlog','scout-acts','scout-recent','scout-streak','scout-scope'].forEach((k) => localStorage.removeItem(k)); } catch {}
+  try { ['scout-user','scout-profile','scout-pipe','scout-saved','scout-kit','scout-accounts','scout-threads','scout-master','scout-docsidx','scout-feed-cache','scout-notifs','scout-reminders','scout-agentlog','scout-acts','scout-recent','scout-streak','scout-scope','scout-board'].forEach((k) => localStorage.removeItem(k)); } catch {}
   idbClear();
   location.reload();
 }
@@ -540,7 +541,7 @@ async function idbDel(key) {
 async function idbClear() { try { const db = await idb(); db.transaction(IDB_STORE, 'readwrite').objectStore(IDB_STORE).clear(); } catch {} }
 
 /* ————— export / import: the backup that replaces an account ————— */
-const BACKUP_KEYS = ['scout-profile', 'scout-master', 'scout-pipe', 'scout-saved', 'scout-kit', 'scout-accounts', 'scout-threads', 'scout-notifs', 'scout-reminders', 'scout-acts', 'scout-streak', 'scout-user', 'scout-docsidx'];
+const BACKUP_KEYS = ['scout-profile', 'scout-master', 'scout-pipe', 'scout-saved', 'scout-kit', 'scout-accounts', 'scout-threads', 'scout-notifs', 'scout-reminders', 'scout-acts', 'scout-streak', 'scout-user', 'scout-docsidx', 'scout-board'];
 async function exportData() {
   toast('Packing everything up…');
   const bundle = { app: 'scout', version: 1, exportedAt: new Date().toISOString(), data: {}, docs: {} };
@@ -688,6 +689,7 @@ function pipeSet(id, patch, o) {
   if (!S.demo) ls('scout-pipe', S.pipe);      // demo mode is in-memory; never let it reach disk
   invalidateUV(); queueSync();
   if (patch.stage && patch.stage !== prev.stage) logAct(patch.stage, k);
+  try { window.dispatchEvent(new CustomEvent('scout:pipe')); } catch {}   // the board listens
   return S.pipe[k];
 }
 function pipeDel(id) { delete S.pipe[String(id)]; ls('scout-pipe', S.pipe); invalidateUV(); queueSync(); }
@@ -699,6 +701,37 @@ function pipeCounts() { const c = {}; for (const s of STAGES) c[s.v] = pipeIn(s.
 /* the live card if the feed still has it, else the snapshot we kept */
 function pipeOpp(p) { return DATA.find((o) => String(o.id) === p.id) || p.snap; }
 function logAct(k, id) { const a = ls('scout-acts') || []; a.push({ k, id, t: Date.now() }); ls('scout-acts', a.slice(-500)); }
+
+/* ═══════════ BOARD BRIDGE ═══════════
+   The React canvas (public/board) reads/writes Scout ONLY through window.Scout.
+   scout-pipe stays the source of truth; the board persists node positions in
+   scout-board (positions only — never pipeline data). */
+function matchScore(id) { try { const o = resolveOpp(id); if (!o) return null; return Math.round(recScore(o, userVector()).score); } catch { return null; } }
+function riskReason(id) { const r = riskItems().find((x) => x.id === String(id)); return r ? r._risk : null; }
+function exportEventICS(id) { addToCalendar(id); }
+function getBoard() { return ls('scout-board') || { nodes: {} }; }
+function saveBoard(state) { if (state && !S.demo) ls('scout-board', state); }
+let _boardLoaded = false;
+function ensureBoard(el) {
+  if (!document.getElementById('board-css')) {
+    const l = document.createElement('link'); l.id = 'board-css'; l.rel = 'stylesheet'; l.href = '/board/board.css?v=' + SCOUT_V;
+    document.head.appendChild(l);
+  }
+  const mount = () => { try { window.ScoutBoard.mount(el); } catch (e) { el.innerHTML = '<div class="board-fail">Board could not load. <button onclick="renderDash(\'board\')">Retry</button></div>'; } };
+  if (window.ScoutBoard) return mount();
+  if (_boardLoaded) { const t = setInterval(() => { if (window.ScoutBoard) { clearInterval(t); mount(); } }, 60); return; }
+  _boardLoaded = true;
+  const sc = document.createElement('script'); sc.src = '/board/board.js?v=' + SCOUT_V;
+  sc.onload = mount; sc.onerror = () => { el.innerHTML = '<div class="board-fail">Board failed to load.</div>'; };
+  document.body.appendChild(sc);
+}
+window.Scout = {
+  getPipe: () => S.pipe, resolveOpp, pipeSet, pipeDays, deadlineHeat, matchScore, riskReason,
+  applyWithScout, exportEventICS, openDetail: (id) => { closeDash(); openDetail(id); },
+  startApply: (id) => { closeDash(); startApply(id); }, toast,
+  getBoard, saveBoard, getDashSec: () => S.dashSec,
+};
+
 /* Days from the SNAPSHOT, not the live feed — snapOf never stores days_left, so
    reading o.days_left silently yields undefined for anything the feed rotated out. */
 function pipeDays(p) {
@@ -1150,7 +1183,7 @@ function railScroll(id, dir) {
 function scardHTML(o, chip) {
   const sv = S.saved.has(o.id);
   const urgent = o.days_left > 0 && o.days_left <= 7;
-  return `<article class="scard" onclick="openDetail('${o.id}')">
+  return `<article class="scard" draggable="true" ondragstart="event.dataTransfer.setData('application/scout-opp','${o.id}');event.dataTransfer.effectAllowed='copy'" onclick="openDetail('${o.id}')">
     <div class="im ${o.realImg ? 'contain' : ''}">${o.realImg ? `<img class="blurfill" src="${esc(o.img)}" alt="" aria-hidden="true" loading="lazy">` : ''}<img class="mainimg" src="${esc(o.img)}" alt="${esc(o.title)}" loading="lazy" onerror="this.style.display='none'">
       <span class="tagchip">${o.applied > 500 ? fmtIN(o.applied) + ' registered' : o.type}</span>${badge2(o)}
       <button class="savebtn ${sv ? 'on' : ''}" onclick="event.stopPropagation();toggleSave('${o.id}',this)" aria-label="Save">${ic(sv ? 'bookmark-filled' : 'bookmark', 15)}</button>
@@ -1168,7 +1201,7 @@ function scardHTML(o, chip) {
 }
 function hcardHTML(o) {
   const m = o._score || 80;
-  return `<article class="hcard" onclick="openDetail('${o.id}')">
+  return `<article class="hcard" draggable="true" ondragstart="event.dataTransfer.setData('application/scout-opp','${o.id}');event.dataTransfer.effectAllowed='copy'" onclick="openDetail('${o.id}')">
     <img class="bg" src="${esc(o.img)}" alt="${esc(o.title)}" loading="lazy">
     <div class="shade"></div>
     <span class="glasschip">${m}% match</span>
@@ -1851,9 +1884,10 @@ function startCountdown(o) {
 }
 function stopCountdown() { if (S._cd) { clearInterval(S._cd); S._cd = null; } }
 function addToCalendar(id) {
-  const o = DATA.find((x) => String(x.id) === String(id));
-  if (!o) return;
-  const dt = o.deadline_ts ? new Date(o.deadline_ts * 1000) : new Date(Date.now() + o.days_left * 86400000);
+  const o = resolveOpp(id) || (S.pipe[String(id)] && S.pipe[String(id)].snap);
+  if (!o) return toast('That deadline is no longer available');
+  const dt = o.deadline_ts ? new Date(o.deadline_ts * 1000) : (o.days_left != null ? new Date(Date.now() + o.days_left * 864e5) : null);
+  if (!dt) return toast('No dated deadline to export');
   const stamp = (d) => d.toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z';
   const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Scout//EN', 'BEGIN:VEVENT',
     'UID:' + o.id + '@scout', 'DTSTAMP:' + stamp(new Date()),
@@ -3915,7 +3949,8 @@ function atRiskItems() { return riskItems().filter((r) => r._sev <= 1); }
    between #vw-agent and #dash-body. All three redirect via DASH_ALIAS. */
 const DASH_SECTIONS = [
   ['today', 'Today', 'spark'],
-  ['tracking', 'Tracking', 'grid'],
+  ['board', 'Board', 'grid'],
+  ['tracking', 'Tracking', 'view'],
   ['details', 'Your details', 'doc'],
 ];
 /* A returning user's S.dashSec may name a section we merged away. */
@@ -3992,8 +4027,13 @@ function renderDash(sec, filter) {
   S.dashSec = sec;
   renderDashNav();
   const el = document.getElementById('dash-body');
+  const boardEl = document.getElementById('vw-board');
   const meta = DASH_SECTIONS.find(([v]) => v === sec) || [];
   document.getElementById('dash-crumb').innerHTML = `<span>Dashboard</span><em>/</em><b>${meta[1] || sec}</b>`;
+  // The board is a persistent React island — shown/hidden, never regenerated,
+  // so its camera/selection/undo survive section switches.
+  if (sec === 'board') { el.style.display = 'none'; boardEl.style.display = 'block'; ensureBoard(boardEl); renderDashNav(); return; }
+  el.style.display = ''; if (boardEl) boardEl.style.display = 'none';
   // The chat shell lives in #vw-agent permanently now. Nothing relocates it.
   const stray = document.querySelector('#dash-body .agent-shell');
   if (stray) document.getElementById('vw-agent').appendChild(stray);
