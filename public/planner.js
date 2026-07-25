@@ -278,7 +278,7 @@ function planWeek(horizonDays) {
     it.scheduled = it.hours - need / 36e5;
   }
   const p2 = getPlan(); p2.events = p2.events.concat(made); savePlan(p2);
-  return { made: made.length, rep };
+  return { made: made.length, ids: made.map((m) => m.id), rep };
 }
 
 /* A prep chain: the steps before a deadline, dated backwards from it.
@@ -396,6 +396,7 @@ function planUpdate(id, patch) {
 function planRemove(id) { const p = getPlan(); p.events = p.events.filter((e) => e.id !== id); savePlan(p); }
 function plSetStage(id, stage) {
   planUpdate(id, { stage });
+  PL.pulse = id;
   // a finished work block on a tracked opportunity nudges the pipeline forward
   const ev = eventById(id);
   if (ev && ev.oppId && stage === 'done' && (S.pipe || {})[ev.oppId]) {
@@ -471,9 +472,9 @@ function planGo(dir) {
   else if (v === 'week' || v === 'planner') a.setDate(a.getDate() + 7 * dir);
   else if (v === 'day') a.setDate(a.getDate() + dir);
   else a.setDate(a.getDate() + 7 * dir);
-  PL.anchor = a.getTime(); renderPlanner();
+  PL.anchor = a.getTime(); PL.dir = dir; renderPlanner();
 }
-function planToday() { PL.anchor = Date.now(); renderPlanner(); }
+function planToday() { PL.anchor = Date.now(); PL.dir = 0; renderPlanner(); }
 
 function rangeTitle() {
   const v = planView(), a = new Date(PL.anchor);
@@ -658,11 +659,14 @@ function renderPlanner() {
   wirePlanner();
   const main = document.querySelector('.dash-main'); if (main) main.scrollTop = keepScroll;
   if (PL.sel) openInspector(PL.sel, true);
+  plFxEnter();
 }
 function toggleCal(k) {
   const p = getPlan(); const h = new Set(p.prefs.hidden || []);
   h.has(k) ? h.delete(k) : h.add(k);
-  p.prefs.hidden = [...h]; savePlan(p); renderPlanner();
+  p.prefs.hidden = [...h]; savePlan(p);
+  PLFX.last = '';                       // content changed shape — re-choreograph
+  renderPlanner();
 }
 
 /* ————— WEEK (ref 5) ————— */
@@ -1065,7 +1069,7 @@ function onPointerDown(ev) {
       }
       const start = snapMs(yToMs(y) - grabOffset + (base - dayS));
       return { start, end: start + dur };
-    }, e);
+    }, e, !!onGrip);
     return;
   }
 
@@ -1098,8 +1102,9 @@ function onPointerDown(ev) {
   document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
 }
 
-function startDrag(el, compute, e) {
+function startDrag(el, compute, e, resizing) {
   el.classList.add('dragging');
+  if (!resizing && fxOn()) gsap.to(el, { scale: 1.03, rotate: 0.4, duration: .16, ease: 'power2.out' });
   const cols = [...document.querySelectorAll('.pl-col-grid')];
   const move = (ev) => {
     const over = cols.find((c) => { const r = c.getBoundingClientRect(); return ev.clientX >= r.left && ev.clientX <= r.right; });
@@ -1118,6 +1123,7 @@ function startDrag(el, compute, e) {
     if (ns && ne && (ns !== e.start || ne !== e.end)) {
       planUpdate(e.id, { start: ns, end: ne, ai: false });   // a human touched it; stop auto-replanning it
       toast(`Moved to ${fmtDayLabel(new Date(ns))} ${fmtTime(ns)}`);
+      PL.pulse = e.id;
     }
     renderPlanner();
   };
@@ -1180,13 +1186,14 @@ function planKeys(e) {
 /* ————— create ————— */
 function createAt(start, end) {
   const ev = { id: 'b' + Math.random().toString(36).slice(2, 9), cal: 'block', title: '', start, end, stage: 'todo', fresh: true };
-  planAdd(ev); PL.sel = ev.id; renderPlanner();
+  planAdd(ev); PL.sel = ev.id; PL.pulse = ev.id; renderPlanner();
   setTimeout(() => { const i = document.getElementById('insp-title'); if (i) { i.focus(); i.select(); } }, 40);
 }
 function quickAdd(text) {
   const ev = parseQuickAdd(text);
   if (!ev) return;
   planAdd(ev);
+  PL.pulse = ev.id;
   const q = document.getElementById('pl-q-hint'); if (q) q.textContent = '';
   toast(`Added “${ev.title}” — ${fmtDayLabel(new Date(ev.start))} ${ev.point ? '' : fmtTime(ev.start)}`);
   PL.anchor = ev.start; renderPlanner();
@@ -1272,6 +1279,7 @@ function openInspector(id, keep) {
   `;
   hydrateIcons(host);
   host.classList.add('open');
+  plFxInspector(host, keep);
   if (!keep) host.scrollTop = 0;
 }
 function closeInspector() {
@@ -1309,9 +1317,10 @@ function rescheduleEvent(id) {
 /* ═══════════ THE PLANNING ACTIONS ═══════════ */
 
 function runPlanWeek() {
-  const { made, rep } = planWeek(7);
+  const { made, ids, rep } = planWeek(7);
   if (!made) return toast('Nothing to schedule — no dated work in the next 7 days');
   PL.view = 'week'; setPref('view', 'week');
+  PL.burst = ids;
   toast(`Placed ${made} work ${made === 1 ? 'block' : 'blocks'} · ${rep.demand}h of work into ${rep.supply}h free`);
   renderPlanner();
   if (rep.slips.length) setTimeout(openTriage, 500);
@@ -1336,6 +1345,7 @@ function blockTimeFor(oppId) {
   }
   if (!made.length) return toast('No free time before that deadline — widen your hours in the strip above');
   planAddMany(made);
+  PL.burst = made.map((m) => m.id);
   toast(`${made.length} ${made.length === 1 ? 'block' : 'blocks'} · ${ef.hours}h booked before the deadline`);
   PL.anchor = made[0].start; renderPlanner();
 }
@@ -1343,6 +1353,7 @@ function addPrepChain(oppId) {
   const chain = prepChain(oppId);
   if (!chain.length) return toast('That one has no dated deadline to work back from');
   planAddMany(chain);
+  PL.burst = chain.map((c) => c.id);
   toast(`${chain.length}-step prep chain added, dated back from the deadline`);
   PL.view = 'agenda'; setPref('view', 'agenda'); renderPlanner();
 }
@@ -1375,7 +1386,7 @@ function openPlSheet(title, html) {
       <div class="pl-sheet-b">${html}</div>
     </div>`;
   document.body.appendChild(el); hydrateIcons(el);
-  requestAnimationFrame(() => el.classList.add('on'));
+  if (!plFxSheet(el)) requestAnimationFrame(() => el.classList.add('on'));
 }
 function closePlSheet() { const el = document.getElementById('pl-sheet'); if (el) el.remove(); }
 
@@ -1388,3 +1399,184 @@ function planFromOpp(oppId) {
   renderDash('calendar');
 }
 window.planFromOpp = planFromOpp;
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MOTION
+   GSAP runs the choreography — timelines, staggers, count-ups — and Motion's
+   spring() drives the physical micro-moments (pops, settles), because a real
+   spring takes velocity instead of a duration and reads as touchable in a way
+   a cubic-bezier never quite does.
+
+   Three rules keep it satisfying instead of busy:
+   1. The full entrance plays only when the VIEW changes shape (view / week /
+      layout) — a 60s tick or a checkbox toggle never re-animates the world.
+   2. A mutation confirms exactly THE THING that changed: one pulse for one
+      edit, one cascade for a batch. Everything else holds still.
+   3. Drag and resize stay 1:1 with the pointer — motion decorates pick-up and
+      landing, never the tracking itself.
+   Everything respects prefers-reduced-motion and survives mid-flight
+   re-renders (each render reverts the previous gsap context first).
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+const PLFX = { last: '', ctx: null };
+function fxOn() {
+  return typeof gsap !== 'undefined' && !matchMedia('(prefers-reduced-motion: reduce)').matches;
+}
+/* a real spring for the touchable moments — Motion if present, gsap fallback */
+function plSpring(el, o) {
+  if (!el || !fxOn()) return;
+  o = Object.assign({ from: .82, stiffness: 520, damping: 24 }, o);
+  if (typeof Motion !== 'undefined' && Motion.animate) {
+    const a = Motion.animate(el, { scale: [o.from, 1] }, { type: 'spring', stiffness: o.stiffness, damping: o.damping });
+    (a.finished || Promise.resolve()).then(() => { el.style.transform = ''; }).catch(() => {});
+  } else {
+    gsap.fromTo(el, { scale: o.from }, { scale: 1, duration: .5, ease: 'back.out(2.2)', clearProps: 'transform' });
+  }
+}
+
+function plFxEnter() {
+  const root = document.getElementById('pl-root');
+  if (!root) return;
+  if (!fxOn()) { PL.pulse = null; PL.burst = null; PL.dir = 0; return; }
+  const view = planView();
+  const key = view + ':' + startOfDay(new Date(PL.anchor)).getTime() + ':' + (planPrefs().listMode || '');
+  const full = key !== PLFX.last || !!PL.dir;
+  PLFX.last = key;
+
+  if (PLFX.ctx) { PLFX.ctx.revert(); PLFX.ctx = null; }
+  PLFX.ctx = gsap.context(() => {
+    // a batch landed → cascade it, recount the hours, and touch nothing else
+    if (PL.burst && PL.burst.length) { fxBurst(root); return; }
+    // one thing changed → confirm that one thing
+    if (PL.pulse) { fxPulse(root); return; }
+    if (!full) return;
+
+    fxCapacity(root);
+    const dir = PL.dir || 0; PL.dir = 0;
+    const stage = root.querySelector('#pl-stage');
+    if (stage && dir) gsap.from(stage, { x: 26 * dir, opacity: 0, duration: .3, ease: 'power3.out', clearProps: 'transform,opacity' });
+    const pill = root.querySelector('.pl-v.on');
+    if (pill) plSpring(pill, { from: .86, damping: 20 });
+
+    if (view === 'week' || view === 'day') fxWeek(root);
+    else if (view === 'month') fxMonth(root);
+    else if (view === 'list') fxList(root);
+    else if (view === 'agenda') fxAgenda(root);
+    else if (view === 'planner') fxLanes(root);
+    fxRailIn(root);
+
+    const emp = root.querySelector('.pl-empty');
+    if (emp) {
+      const ic0 = emp.querySelector('svg');
+      if (ic0) gsap.from(ic0, { scale: 0, rotation: -12, duration: .65, ease: 'elastic.out(1, .55)' });
+      gsap.from(emp.querySelectorAll('b, p, .pill'), { y: 10, opacity: 0, duration: .35, stagger: .06, ease: 'power2.out' });
+    }
+  }, root);
+}
+
+/* the honesty strip counts to its truth — numbers roll the last stretch, the
+   bar draws itself. Runs on entrance and after every batch. */
+function fxCapacity(root) {
+  root.querySelectorAll('.pl-cap-k b').forEach((el) => {
+    const m = (el.textContent || '').match(/^([\d.]+)(.*)$/); if (!m) return;
+    const end = parseFloat(m[1]), suf = m[2] || '', dec = m[1].includes('.');
+    const o = { v: Math.max(0, end - Math.min(end, 14)) };
+    gsap.to(o, { v: end, duration: .7, ease: 'power2.out',
+      onUpdate: () => { el.textContent = (dec ? o.v.toFixed(1) : String(Math.round(o.v))) + suf; },
+      onComplete: () => { el.textContent = m[1] + suf; } });
+  });
+  const bar = root.querySelector('.pl-cap-bar i');
+  if (bar) gsap.from(bar, { scaleX: 0, transformOrigin: '0 50%', duration: .7, ease: 'expo.out', clearProps: 'transform' });
+}
+
+function fxWeek(root) {
+  const heads = root.querySelectorAll('.pl-dh');
+  if (heads.length) gsap.from(heads, { y: -8, opacity: 0, duration: .3, stagger: .025, ease: 'power2.out', clearProps: 'transform' });
+  const blocks = root.querySelectorAll('.pl-b');
+  if (blocks.length) gsap.from(blocks, {
+    scale: .92, y: 10, opacity: 0, transformOrigin: '50% 0',
+    duration: .45, ease: 'back.out(1.7)', clearProps: 'transform',
+    stagger: { each: Math.min(.03, .35 / blocks.length) } });
+  const pts = root.querySelectorAll('.pl-pt');
+  if (pts.length) gsap.from(pts, { y: -6, opacity: 0, duration: .25, stagger: .02, ease: 'power2.out', clearProps: 'transform' });
+  const now = root.querySelector('.pl-now');
+  if (now) gsap.from(now, { scaleX: 0, transformOrigin: '0 50%', duration: .55, delay: .12, ease: 'expo.out', clearProps: 'transform' });
+}
+function fxMonth(root) {
+  const cells = root.querySelectorAll('.pl-mc');
+  if (cells.length) gsap.from(cells, { y: 6, opacity: 0, duration: .3, ease: 'power2.out', clearProps: 'transform',
+    stagger: { each: .006, grid: 'auto' } });
+}
+function fxList(root) {
+  const cards = root.querySelectorAll('.pl-cardgrid .pl-card');
+  if (cards.length) gsap.from(cards, { y: 16, scale: .97, opacity: 0, duration: .5, ease: 'back.out(1.4)',
+    stagger: { each: Math.min(.04, .4 / cards.length), grid: 'auto' }, clearProps: 'transform' });
+  const rows = root.querySelectorAll('.pl-lr');
+  if (rows.length) gsap.from(rows, { x: -10, opacity: 0, duration: .35, ease: 'power2.out',
+    stagger: Math.min(.025, .3 / rows.length), clearProps: 'transform' });
+}
+function fxAgenda(root) {
+  const secs = root.querySelectorAll('.pl-ad');
+  if (secs.length) gsap.from(secs, { y: 12, opacity: 0, duration: .38, stagger: .07, ease: 'power3.out', clearProps: 'transform' });
+  const rows = root.querySelectorAll('.pl-r');
+  if (rows.length) gsap.from(rows, { x: -8, opacity: 0, duration: .3, ease: 'power2.out',
+    stagger: Math.min(.02, .3 / rows.length), delay: .08, clearProps: 'transform' });
+}
+function fxLanes(root) {
+  gsap.from(root.querySelectorAll('.pl-lane-h'), { y: 8, opacity: 0, duration: .32, stagger: .06, ease: 'power2.out', clearProps: 'transform' });
+  const cards = root.querySelectorAll('.pl-lane .pl-card');
+  if (cards.length) gsap.from(cards, { y: 12, scale: .96, opacity: 0, duration: .45, ease: 'back.out(1.5)',
+    stagger: Math.min(.04, .4 / cards.length), clearProps: 'transform' });
+}
+function fxRailIn(root) {
+  const secs = root.querySelectorAll('.pl-rail-col .plr-sec, .pl-rail-col .rail-sec');
+  if (secs.length) gsap.from(secs, { y: 10, opacity: 0, duration: .4, stagger: .08, ease: 'power3.out', clearProps: 'transform' });
+  plSpring(root.querySelector('.mm-c.sel'), { from: .6, damping: 18 });
+}
+
+/* one edit → one confirmation. A spring pop plus a ring that exhales. */
+function fxPulse(root) {
+  const id = PL.pulse; PL.pulse = null;
+  const el = root.querySelector(`[data-id="${CSS.escape(id)}"]`);
+  if (!el) return;
+  plSpring(el, { from: .9, stiffness: 480, damping: 20 });
+  gsap.fromTo(el,
+    { boxShadow: '0 0 0 4px rgba(31,122,71,.30)' },
+    { boxShadow: '0 0 0 0px rgba(31,122,71,0)', duration: .8, ease: 'power2.out', clearProps: 'boxShadow' });
+}
+/* a planned batch lands in time order — the "watch Scout lay out your week"
+   moment. Sorted by position on screen, so the cascade reads top-to-bottom
+   in every view. */
+function fxBurst(root) {
+  const ids = PL.burst || []; PL.burst = null; PL.pulse = null;
+  fxCapacity(root);
+  const els = ids.map((id) => root.querySelector(`.pl-stage [data-id="${CSS.escape(id)}"]`)).filter(Boolean)
+    .sort((a, b) => { const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect(); return ra.top - rb.top || ra.left - rb.left; });
+  if (!els.length) return;
+  gsap.from(els, { scale: .6, y: 8, opacity: 0, transformOrigin: '50% 30%', duration: .55, ease: 'back.out(2.1)',
+    stagger: { each: Math.min(.05, .8 / els.length) }, clearProps: 'transform' });
+}
+
+function plFxInspector(host, keep) {
+  if (!host || !fxOn() || keep) return;
+  gsap.killTweensOf(host);
+  const mobile = matchMedia('(max-width: 900px)').matches;
+  if (!mobile) gsap.from(host, { x: 18, opacity: 0, duration: .32, ease: 'back.out(1.6)', clearProps: 'transform,opacity' });
+  const kids = host.querySelectorAll('.insp-h, .insp-t, .insp-sub, .insp-when, .insp-row, .insp-stages, .insp-why, .insp-sec, .insp-note');
+  if (kids.length) gsap.from(kids, { y: 8, opacity: 0, duration: .3, stagger: .035, delay: .04, ease: 'power2.out', clearProps: 'transform' });
+}
+/* returns true when it owned the entrance, so the CSS fallback stands down */
+function plFxSheet(wrap) {
+  if (!wrap || !fxOn()) return false;
+  wrap.style.transition = 'none';
+  wrap.classList.add('on');
+  const bg = wrap.querySelector('.pl-sheet-bg'), sheet = wrap.querySelector('.pl-sheet');
+  if (bg) gsap.from(bg, { opacity: 0, duration: .25 });
+  if (sheet) {
+    sheet.style.transition = 'none';
+    gsap.from(sheet, { y: 30, scale: .97, opacity: 0, duration: .42, ease: 'back.out(1.5)', clearProps: 'transform,opacity' });
+  }
+  const items = wrap.querySelectorAll('.tri-lead, .pl-triage h5, .tri-list li, .tri-foot');
+  if (items.length) gsap.from(items, { y: 10, opacity: 0, duration: .3, stagger: .04, delay: .1, ease: 'power2.out', clearProps: 'transform' });
+  return true;
+}

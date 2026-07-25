@@ -4,7 +4,7 @@
    - same-origin GET (static assets) → stale-while-revalidate
    - cross-origin (CDNs, Unsplash, fonts) → pass through to the network untouched
 */
-const CACHE = 'scout-v50-0';
+const CACHE = 'scout-v51-0';
 const SHELL = [
   '/',
   '/index.html',
@@ -13,6 +13,7 @@ const SHELL = [
   '/scout.js',
   '/planner.css',
   '/planner.js',
+  '/vendor/motion.js',
   '/scout-heart.png',
   '/scout-cursor.png',
   '/favicon.png',
