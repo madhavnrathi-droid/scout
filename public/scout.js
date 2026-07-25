@@ -150,7 +150,7 @@ const S = {
   ledgerType: 'All', ledgerHorizon: 30, ledgerSort: 'prize',
   insightIdx: 0, insightTimer: null,
 };
-const SCOUT_V = 49;
+const SCOUT_V = 50;
 function ls(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch { return null; } }
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtIN = (n) => Number(n || 0).toLocaleString('en-IN');

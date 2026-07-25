@@ -206,7 +206,7 @@
 .pl-state.done { background: color-mix(in srgb, var(--green) 14%, #fff); color: var(--green-deep); }
 
 /* ══ PLANNER lanes — no lane fill; the cards do the work (ref 1) ══ */
-.pl-board { display: grid; grid-template-columns: repeat(4, 1fr); gap: 26px; align-items: start; }
+.pl-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 24px; align-items: start; }
 .pl-lane { background: transparent; padding: 0; min-height: 120px; }
 .pl-lane-h { display: flex; align-items: center; gap: 8px; padding: 0 2px 16px; color: var(--ink3); }
 .pl-lane-h b { font-size: 14px; font-weight: 650; color: var(--ink); letter-spacing: -.015em; }
@@ -215,11 +215,11 @@
 .pl-lane-b.over { background: color-mix(in srgb, var(--ink) 4%, transparent); }
 .pl-lane-empty { font-size: 12px; color: var(--ink3); text-align: center; padding: 26px 0; }
 /* the one place a card is right — and it is generous inside */
-.pl-card { background: var(--card); border: none; border-radius: 18px; padding: 18px; cursor: grab;
+.pl-card { background: var(--card); border: none; border-radius: 18px; padding: 0; overflow: hidden; cursor: grab;
   box-shadow: 0 1px 2px rgba(16, 16, 16, .04); transition: all .18s var(--ease); }
-.pl-card:hover { box-shadow: 0 10px 30px rgba(16, 16, 16, .09); transform: translateY(-2px); }
+.pl-card:hover { box-shadow: 0 14px 40px rgba(16, 16, 16, .10); transform: translateY(-3px); }
 .pl-card.drag { opacity: .4; }
-.pl-card-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
+.pl-card-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
 .pl-cchip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600;
   padding: 6px 11px; border-radius: 999px; background: var(--pl-soft); color: var(--ink2); }
 .pl-cchip svg { color: var(--c, currentColor); }
@@ -227,10 +227,10 @@
 .pl-cchip.h-soon { background: color-mix(in srgb, var(--orange) 15%, #fff); color: #9A5B00; }
 .pl-cchip.st-overdue { background: color-mix(in srgb, var(--red) 11%, #fff); color: var(--red); }
 .pl-cchip.st-now { background: var(--ink); color: #fff; }
-.pl-card h4 { font-size: 17px; font-weight: 650; letter-spacing: -.02em; line-height: 1.35; }
+.pl-card h4 { font-size: 15.5px; font-weight: 650; letter-spacing: -.018em; line-height: 1.35; }
 .pl-card p { font-size: 12.5px; line-height: 1.5; color: var(--ink3); margin-top: 7px; display: inline-flex; align-items: flex-start; gap: 6px; }
 .pl-card footer { display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--pl-line); }
+  margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--pl-line); }
 .pl-card-when { font-size: 11.5px; color: var(--ink3); display: inline-flex; align-items: center; gap: 6px; }
 .pl-card footer button { color: var(--ink3); display: inline-flex; }
 .pl-card footer button:hover { color: var(--ink); }
@@ -372,7 +372,6 @@
   .pl-cap-k { padding-right: 20px; margin-right: 20px; }
   .pl-cap-bar { flex-basis: 100%; margin: 14px 0 0; }
   .pl-cap-act { flex-basis: 100%; margin-top: 16px; }
-  .pl-board { grid-template-columns: repeat(2, 1fr); gap: 20px; }
   .pl-split { grid-template-columns: 1fr; gap: 34px; }
   .pl-rail-col { position: static; max-height: none; }
   /* selected: the rail lifts into a bottom sheet so it can't push the grid away */
@@ -390,7 +389,6 @@
   /* a 7-column week is unreadable on a phone: show 3 days and let Day/Agenda lead */
   .pl-week-head, .pl-week-body { grid-template-columns: var(--pl-gut) repeat(3, 1fr); }
   .pl-col:nth-child(n+5), .pl-dh:nth-child(n+5) { display: none; }
-  .pl-board { grid-template-columns: 1fr; }
   .pl-mg { grid-auto-rows: minmax(76px, 1fr); }
   .pl-mc-list { display: none; }
   .pl-r { grid-template-columns: 46px 23px 1fr; gap: 12px; }
@@ -409,12 +407,12 @@
   border-radius: 9px; }
 .pl-art i { font-style: normal; font-weight: 650; letter-spacing: -.02em; }
 .pl-art img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
-.pl-art.xs { width: 22px; height: 22px; border-radius: 6px; }
-.pl-art.xs i { font-size: 11px; }
-.pl-art.sm { width: 32px; height: 32px; border-radius: 8px; }
-.pl-art.sm i { font-size: 13px; }
-.pl-art.md { width: 44px; height: 44px; border-radius: 11px; }
-.pl-art.md i { font-size: 17px; }
+.pl-art.xs { width: 24px; height: 24px; border-radius: 7px; }
+.pl-art.xs i { font-size: 11.5px; }
+.pl-art.sm { width: 44px; height: 44px; border-radius: 11px; }
+.pl-art.sm i { font-size: 16px; }
+.pl-art.md { width: 64px; height: 64px; border-radius: 14px; }
+.pl-art.md i { font-size: 22px; }
 .pl-art.is-kind { background: color-mix(in srgb, var(--c) 13%, #fff); color: var(--c); }
 /* domain tints, same mapping as the Board's node art */
 .pl-art[data-dom="AI/ML"], .pl-art[data-dom="Engineering"] { --t: var(--blue); }
@@ -424,12 +422,9 @@
 .pl-art[data-dom="Policy"], .pl-art[data-dom="Social Impact"] { --t: var(--red-deep); }
 
 /* agenda + rail rows make room for it */
-.pl-r { grid-template-columns: 64px 24px 32px 1fr auto; }
+.pl-r { grid-template-columns: 64px 24px 44px 1fr auto; }
 .pl-r::before { left: 89px; }
-.plr-item { grid-template-columns: 8px 22px 1fr auto; }
-.pl-card-top { display: flex; align-items: flex-start; gap: 12px; }
-.pl-card-top h4 { flex: 1; min-width: 0; }
-.pl-b .pl-art.xs { margin-bottom: 4px; }
+.plr-item { grid-template-columns: 8px 24px 1fr auto; }
 
 /* ══ LIST (ref 3) ══════════════════════════════════════════ */
 .pl-list { overflow-x: auto; }
@@ -438,11 +433,11 @@
   color: var(--ink3); font-weight: 600; padding: 0 14px 12px 0; border-bottom: 1px solid var(--pl-line); white-space: nowrap; }
 .pl-lr { border-bottom: 1px solid var(--pl-line); cursor: pointer; transition: background .14s; }
 .pl-lr:hover { background: color-mix(in srgb, var(--ink) 2.5%, transparent); }
-.pl-lr td { padding: 14px 14px 14px 0; vertical-align: middle; }
+.pl-lr td { padding: 16px 14px 16px 0; vertical-align: middle; }
 .pl-lr td:last-child { padding-right: 0; }
 .c-name { display: flex; align-items: center; gap: 14px; min-width: 0; }
 .lr-t { min-width: 0; display: block; }
-.lr-t b { display: block; font-size: 14.5px; font-weight: 600; letter-spacing: -.015em; line-height: 1.35;
+.lr-t b { display: block; font-size: 15px; font-weight: 600; letter-spacing: -.015em; line-height: 1.35;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lr-t em { font-style: normal; font-size: 12px; color: var(--ink3); display: block; margin-top: 2px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -472,13 +467,54 @@
 @media (max-width: 860px)  { .pl-list .c-kind { display: none; } }
 @media (max-width: 680px)  {
   .pl-list .c-stage { display: none; }
-  .pl-art.md { width: 38px; height: 38px; }
-  .pl-r { grid-template-columns: 46px 23px 28px 1fr; }
+  .pl-art.md { width: 48px; height: 48px; }
+  .pl-r { grid-template-columns: 46px 23px 36px 1fr; }
   .pl-r::before { left: 69px; }
-  .pl-art.sm { width: 28px; height: 28px; }
+  .pl-art.sm { width: 36px; height: 36px; }
 }
 
 /* artwork in a block sits in the corner: it costs no vertical space, so even a
    90-minute block can carry it without squeezing the title or the reason */
 .pl-art.corner { position: absolute; top: 8px; right: 8px; z-index: 2; }
-.pl-b:has(.pl-art.corner) .pl-b-in b { padding-right: 28px; }
+.pl-b:has(.pl-art.corner) .pl-b-in b { padding-right: 30px; }
+
+/* ══ COVER — the Discover card's media frame at 75% scale ══
+   Same grammar as .scard .im: 4:3, cover-fit; a real org banner letterboxes
+   over a blurred copy of itself; the org's small thumb sits as a corner chip
+   when the banner is stock; the type rides top-left as a glass pill. */
+.plc-im { position: relative; aspect-ratio: 4/3; overflow: hidden;
+  background: linear-gradient(155deg, color-mix(in srgb, var(--t, var(--ink3)) 15%, #fff), color-mix(in srgb, var(--t, var(--ink3)) 5%, #fff)); }
+.plc-im[data-dom="AI/ML"], .plc-im[data-dom="Engineering"] { --t: var(--blue); }
+.plc-im[data-dom="ClimaTech"], .plc-im[data-dom="Life Sciences"], .plc-im[data-dom="HealthTech"] { --t: var(--green); }
+.plc-im[data-dom="Business"], .plc-im[data-dom="Finance"] { --t: var(--orange); }
+.plc-im[data-dom="Design"], .plc-im[data-dom="Arts"] { --t: var(--rose, #FF3F6C); }
+.plc-im[data-dom="Policy"], .plc-im[data-dom="Social Impact"] { --t: var(--red-deep); }
+.plc-main { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;
+  transition: transform .6s var(--ease); }
+.plc-im.contain .plc-main { object-fit: contain; }
+.pl-card:hover .plc-main { transform: scale(1.04); }
+.plc-blur { position: absolute; inset: -10%; width: 120%; height: 120%; max-width: none; object-fit: cover;
+  filter: blur(18px) saturate(1.25); opacity: .85; z-index: 0; }
+.plc-mono { position: absolute; inset: 0; z-index: 0; display: grid; place-items: center; font-style: normal;
+  font-size: 36px; font-weight: 650; letter-spacing: -.02em;
+  color: color-mix(in srgb, var(--t, var(--ink3)) 55%, var(--ink3)); opacity: .5; }
+.plc-type { position: absolute; top: 10px; left: 10px; z-index: 2; padding: 5px 11px; border-radius: 999px;
+  background: rgba(255, 255, 255, .62); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+  font-size: 10.5px; font-weight: 500; color: var(--ink);
+  max-width: 70%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.plc-logo { position: absolute; right: 10px; bottom: 10px; z-index: 2; width: 30px; height: 30px; border-radius: 9px;
+  background: #fff; padding: 2px; box-shadow: var(--sh-sm); }
+.plc-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 7px; }
+.plc-im img { -webkit-user-drag: none; }
+
+.pl-card-bd { padding: 15px 16px 14px; }
+.pl-card-org { font-size: 12.5px; color: var(--ink3); margin-top: 3px; }
+.pl-card-r { display: inline-flex; align-items: center; gap: 8px; }
+.pl-card-fit { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* ══ THE DYNAMIC GRID — List's cards layout ══ */
+.pl-lt { display: flex; justify-content: flex-end; gap: 2px; margin-bottom: 16px; }
+.pl-lt button { padding: 8px 11px; border-radius: 9px; color: var(--ink3); display: inline-flex; }
+.pl-lt button:hover { color: var(--ink); background: var(--pl-soft); }
+.pl-lt button.on { background: var(--pl-soft); color: var(--ink); }
+.pl-cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 22px; align-items: start; }

@@ -418,29 +418,46 @@ function plSetStage(id, stage) {
    One inline glyph is cheaper than polluting the shared IC map. */
 const chev = (dir) => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${dir < 0 ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'}"/></svg>`;
 
-/* ————— artwork —————
-   The same three-tier rule the Board uses, at list scale: a real org banner is
-   shown as-is; a stock photo is skipped entirely in favour of the org's own
-   thumb; with neither we draw a tinted monogram. At 44px a repeated stock
-   photo is pure noise, so `img` is only trusted when realImg says it is real. */
+/* ————— artwork — feed parity —————
+   The SAME picture the Discover card shows, because recognition is the point:
+   an opportunity must look identical on the feed, the board and the calendar.
+   `img` always (exactly like the feed's .mainimg), letterboxed over a blurred
+   copy when it is a real org banner (.im.contain parity), with the org's small
+   thumb as a corner chip when the banner is stock. A monogram appears ONLY
+   when there is no image at all — plain blocks and tasks, never listings. */
 function artFor(oppId, title) {
   const p = (S.pipe || {})[String(oppId)];
   const o = (p && p.snap) || {};
   const live = (typeof resolveOpp === 'function' && resolveOpp(oppId)) || {};
-  const src = (live.realImg ?? o.realImg) ? (live.img || o.img) : (live.imgThumb || o.imgThumb);
+  const img = live.img || o.img || null;
+  const realImg = !!(live.realImg ?? o.realImg);
+  const logo = (!realImg && (live.imgThumb || o.imgThumb)) || null;
   const mono = ((live.org || o.org || title || '?').trim()[0] || '?').toUpperCase();
   const dom = ((live.dom || o.dom || [])[0]) || '';
-  return { src, mono, dom };
+  const type = live.type || o.type || '';
+  return { img, realImg, logo, mono, dom, type };
 }
+/* small square thumb — list rows, agenda, rail, week-block corners */
 function artHTML(e, cls) {
   if (!e.oppId) {
     const c = CALS[e.cal] || CALS.block;
     return `<span class="pl-art ${cls || ''} is-kind" style="--c:${c.color}">${ic(c.icon, 15)}</span>`;
   }
   const a = artFor(e.oppId, e.title);
-  return `<span class="pl-art ${cls || ''}" data-dom="${esc(a.dom)}">${a.src
-    ? `<img src="${esc(a.src)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`
-    : ''}<i>${esc(a.mono)}</i></span>`;
+  return `<span class="pl-art ${cls || ''}" data-dom="${esc(a.dom)}"><i>${esc(a.mono)}</i>${a.img
+    ? `<img src="${esc(a.img)}" alt="" loading="lazy" decoding="async" draggable="false" onerror="this.remove()">`
+    : ''}</span>`;
+}
+/* full-width cover — the Discover card's media frame at 75% scale */
+function coverHTML(e) {
+  const a = artFor(e.oppId, e.title);
+  return `<div class="plc-im ${a.realImg ? 'contain' : ''}" data-dom="${esc(a.dom)}">
+    <i class="plc-mono" aria-hidden="true">${esc(a.mono)}</i>
+    ${a.img ? `${a.realImg ? `<img class="plc-blur" src="${esc(a.img)}" alt="" aria-hidden="true" loading="lazy" draggable="false">` : ''}
+    <img class="plc-main" src="${esc(a.img)}" alt="" loading="lazy" decoding="async" draggable="false" onerror="this.remove()">` : ''}
+    ${a.type ? `<span class="plc-type">${esc(a.type)}</span>` : ''}
+    ${a.logo ? `<span class="plc-logo"><img src="${esc(a.logo)}" alt="" loading="lazy" draggable="false" onerror="this.parentElement.remove()"></span>` : ''}
+  </div>`;
 }
 
 const VIEWS = [['month', 'Month'], ['week', 'Week'], ['day', 'Day'], ['list', 'List'], ['agenda', 'Agenda'], ['planner', 'Planner']];
@@ -841,9 +858,31 @@ function viewList() {
       <p>Save something in Discover, or type in the box above, and it shows up here.</p>
       <button class="pill pill-dark" onclick="closeDash();goV('discover')">Find something</button></div>`;
   }
+  const mode = planPrefs().listMode || 'cards';
+  const toggle = `<div class="pl-lt" role="tablist" aria-label="List layout">
+    <button class="${mode === 'cards' ? 'on' : ''}" onclick="setPref('listMode','cards');renderPlanner()" title="Cards" aria-label="Card grid">${ic('grid', 15)}</button>
+    <button class="${mode === 'rows' ? 'on' : ''}" onclick="setPref('listMode','rows');renderPlanner()" title="Rows" aria-label="Rows">${ic('layers', 15)}</button>
+  </div>`;
+  if (mode === 'cards') {
+    // A card means THE THING, not the sub-session: six 1.5h blocks for one
+    // fellowship collapse into one card that says "6 sessions · 9h planned".
+    // Rows mode keeps every entry — that one is the schedule, this is the shelf.
+    const byKey = new Map();
+    for (const e of all) {
+      const k = e.oppId || e.id;
+      if (!byKey.has(k)) byKey.set(k, []);
+      byKey.get(k).push(e);
+    }
+    const cards = [...byKey.values()].map((items) => {
+      const primary = items.find((x) => x.cal === 'deadline') || items[0];
+      const blocks = items.filter((x) => !x.point);
+      const planned = blocks.reduce((n, b) => n + (b.end - b.start), 0);
+      return planCard(Object.assign({}, primary, { _sessions: blocks.length, _planned: planned }));
+    }).join('');
+    return `<div>${toggle}<div class="pl-cardgrid">${cards}</div></div>`;
+  }
   const now = Date.now();
   const rows = all.map((e) => {
-    const p = e.oppId ? (S.pipe || {})[e.oppId] : null;
     const days = Math.ceil((e.start - now) / DAY_MS);
     const heat = deadlineHeat(days);
     const match = e.oppId && typeof matchScore === 'function' ? matchScore(e.oppId) : null;
@@ -864,7 +903,7 @@ function viewList() {
       </td>
     </tr>`;
   }).join('');
-  return `<div class="pl-list">
+  return `<div>${toggle}<div class="pl-list">
     <table>
       <thead><tr>
         <th class="c-name">Item</th><th class="c-kind">Kind</th><th class="c-when">When</th>
@@ -872,7 +911,7 @@ function viewList() {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-  </div>`;
+  </div></div>`;
 }
 
 /* ————— PLANNER (stages, usable beyond the calendar) ————— */
@@ -894,18 +933,28 @@ function viewPlanner() {
 function planCard(e) {
   const c = CALS[e.cal] || CALS.block;
   const heat = e.cal === 'deadline' ? deadlineHeat(Math.ceil((e.start - Date.now()) / DAY_MS)) : null;
+  const match = e.oppId && typeof matchScore === 'function' ? matchScore(e.oppId) : null;
+  const chips = [
+    heat ? `<span class="pl-cchip h-${heat.cls}">${ic('zap', 12)}${heat.t}</span>` : '',
+    !e.oppId ? `<span class="pl-cchip" style="--c:${c.color}">${ic(c.icon, 12)}${c.label.replace(/s$/, '')}</span>` : '',
+    STATE_WORD[e.state] ? `<span class="pl-cchip st-${e.state}">${STATE_WORD[e.state]}</span>` : '',
+  ].join('');
   return `<article class="pl-card s-${e.state}" draggable="true" data-id="${e.id}" tabindex="0">
-    <div class="pl-card-chips">
-      ${heat ? `<span class="pl-cchip h-${heat.cls}">${ic('zap', 12)}${heat.t}</span>` : ''}
-      <span class="pl-cchip" style="--c:${c.color}">${ic(c.icon, 12)}${c.label.replace(/s$/, '')}</span>
-      ${STATE_WORD[e.state] ? `<span class="pl-cchip st-${e.state}">${STATE_WORD[e.state]}</span>` : ''}
+    ${e.oppId ? coverHTML(e) : ''}
+    <div class="pl-card-bd">
+      ${chips.trim() ? `<div class="pl-card-chips">${chips}</div>` : ''}
+      <h4>${esc(e.title)}</h4>
+      ${e.org ? `<p class="pl-card-org">${esc(e.org)}</p>` : (e.sub || e.why ? `<p>${ic('link', 12)} ${esc(e.sub || e.why)}</p>` : '')}
+      <footer>
+        <span class="pl-card-when">${ic('calendar', 12)} ${e._sessions > 1
+          ? `${e._sessions} sessions · ${plDur(e._planned)} planned`
+          : `${fmtDayLabel(new Date(e.start))}${e.point ? '' : ` · ${plDur(e.end - e.start)}`}`}</span>
+        <span class="pl-card-r">
+          ${match != null ? `<b class="pl-card-fit">${match}%</b>` : ''}
+          ${e.oppId ? `<button onclick="event.stopPropagation();openDetail('${e.oppId}')" title="Open the listing">${ic('arrow-up-right', 13)}</button>` : ''}
+        </span>
+      </footer>
     </div>
-    <div class="pl-card-top">${artHTML(e, 'md')}<h4>${esc(e.title)}</h4></div>
-    ${e.sub || e.why ? `<p>${ic('link', 12)} ${esc(e.sub || e.why)}</p>` : ''}
-    <footer>
-      <span class="pl-card-when">${ic('calendar', 12)} ${fmtDayLabel(new Date(e.start))}${e.point ? '' : ` · ${plDur(e.end - e.start)}`}</span>
-      ${e.oppId ? `<button onclick="event.stopPropagation();openDetail('${e.oppId}')" title="Open the listing">${ic('arrow-up-right', 12)}</button>` : ''}
-    </footer>
   </article>`;
 }
 
