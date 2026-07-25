@@ -39,6 +39,18 @@ const PSTAGES = [
 const STAGE_LABEL_P = Object.fromEntries(PSTAGES);
 
 /* ————— storage ————— */
+/* One-time sweep: blocks carrying no title, no linked opportunity and no note
+   hold zero information — they are artefacts of the old click-creates-a-block
+   bug. Anything the user actually authored (a title, a link, a note) is kept. */
+function sweepEmpties() {
+  const p = ls(PLAN_KEY); if (!p || !Array.isArray(p.events)) return 0;
+  const before = p.events.length;
+  p.events = p.events.filter((e) => (e.title || '').trim() || e.oppId || (e.note || '').trim());
+  const gone = before - p.events.length;
+  if (gone) ls(PLAN_KEY, p);
+  return gone;
+}
+
 function getPlan() {
   const p = ls(PLAN_KEY) || {};
   return {
@@ -132,7 +144,8 @@ function collectEvents() {
     .filter((e) => !hidden.has(e.cal))
     .map((e) => {
       const stage = e.stage || plan.stages[e.id] || (e.pipeStage === 'applied' ? 'done' : 'todo');
-      return Object.assign({}, e, { stage, state: deriveState(e, stage), title: e.title || 'Untitled' });
+      const blank = !(e.title || '').trim();
+      return Object.assign({}, e, { stage, state: deriveState(e, stage), untitled: blank, title: blank ? 'Untitled' : e.title });
     })
     .sort((a, b) => a.start - b.start || (a.point ? -1 : 1));
 }
@@ -496,7 +509,7 @@ function needsYou() {
   const out = [];
   for (const e of collectEvents()) {
     if (e.stage === 'done') continue;
-    if (!(e.title || '').trim()) continue;      // an unnamed scrap is not a priority
+    if (e.untitled) continue;                  // an unnamed scrap is not a priority
     const sev = severity(e);
     let why = null;
     if (e.state === 'overdue') why = e.cal === 'deadline' ? 'closed — you never sent it' : 'this slot has passed';
@@ -513,7 +526,7 @@ function needsYou() {
 
 function plRailHTML() {
   const need = needsYou();
-  const next = collectEvents().filter((e) => e.stage !== 'done' && (e.end || e.start) >= Date.now()).slice(0, 4);
+  const next = collectEvents().filter((e) => e.stage !== 'done' && !e.untitled && (e.end || e.start) >= Date.now()).slice(0, 4);
   return `<div class="plr">
     ${planView() === 'month' ? '' : miniMonth()}
     <section class="plr-sec">
@@ -846,6 +859,11 @@ const snapMs = (ms) => Math.round(ms / (SNAP_MIN * 6e4)) * SNAP_MIN * 6e4;
 
 function wirePlanner() {
   const root = document.getElementById('pl-root'); if (!root) return;
+  if (!window.__plSwept) {
+    window.__plSwept = true;
+    const gone = sweepEmpties();
+    if (gone) { toast(`Cleared ${gone} empty ${gone === 1 ? 'block' : 'blocks'}`); return renderPlanner(); }
+  }
   const body = document.getElementById('pl-week-body') || root;
 
   /* — open the inspector — */
@@ -1133,7 +1151,12 @@ function openInspector(id, keep) {
   host.classList.add('open');
   if (!keep) host.scrollTop = 0;
 }
-function closeInspector() { PL.sel = null; renderRail(); }
+function closeInspector() {
+  // abandoning a just-created block without naming it should leave nothing behind
+  const e = PL.sel && eventById(PL.sel);
+  if (e && e.untitled && !e.oppId && getPlan().events.some((x) => x.id === e.id && x.fresh)) planRemove(e.id);
+  PL.sel = null; renderPlanner();
+}
 function toLocalInput(ms) {
   const d = new Date(ms - d0off(ms));
   return d.toISOString().slice(0, 16);
