@@ -150,7 +150,7 @@ const S = {
   ledgerType: 'All', ledgerHorizon: 30, ledgerSort: 'prize',
   insightIdx: 0, insightTimer: null,
 };
-const SCOUT_V = 44;
+const SCOUT_V = 45;
 function ls(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch { return null; } }
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtIN = (n) => Number(n || 0).toLocaleString('en-IN');
@@ -499,7 +499,7 @@ function setSyncBadge(state) {
 }
 function resetDevice() {
   if (!confirm('This clears your profile, saves, drafts and documents from this browser. Export first if you want a backup. Continue?')) return;
-  try { ['scout-user','scout-profile','scout-pipe','scout-saved','scout-kit','scout-accounts','scout-threads','scout-master','scout-docsidx','scout-feed-cache','scout-notifs','scout-reminders','scout-agentlog','scout-acts','scout-recent','scout-streak','scout-scope','scout-board'].forEach((k) => localStorage.removeItem(k)); } catch {}
+  try { ['scout-user','scout-profile','scout-pipe','scout-saved','scout-kit','scout-accounts','scout-threads','scout-master','scout-docsidx','scout-feed-cache','scout-notifs','scout-reminders','scout-agentlog','scout-acts','scout-recent','scout-streak','scout-scope','scout-board','scout-plan'].forEach((k) => localStorage.removeItem(k)); } catch {}
   idbClear();
   location.reload();
 }
@@ -541,7 +541,7 @@ async function idbDel(key) {
 async function idbClear() { try { const db = await idb(); db.transaction(IDB_STORE, 'readwrite').objectStore(IDB_STORE).clear(); } catch {} }
 
 /* ————— export / import: the backup that replaces an account ————— */
-const BACKUP_KEYS = ['scout-profile', 'scout-master', 'scout-pipe', 'scout-saved', 'scout-kit', 'scout-accounts', 'scout-threads', 'scout-notifs', 'scout-reminders', 'scout-acts', 'scout-streak', 'scout-user', 'scout-docsidx', 'scout-board'];
+const BACKUP_KEYS = ['scout-profile', 'scout-master', 'scout-pipe', 'scout-saved', 'scout-kit', 'scout-accounts', 'scout-threads', 'scout-notifs', 'scout-reminders', 'scout-acts', 'scout-streak', 'scout-user', 'scout-docsidx', 'scout-board', 'scout-plan'];
 async function exportData() {
   toast('Packing everything up…');
   const bundle = { app: 'scout', version: 1, exportedAt: new Date().toISOString(), data: {}, docs: {} };
@@ -1823,7 +1823,8 @@ function openDetail(id) {
         <div class="det-count ${urgent ? 'urgent' : ''}" id="det-count" data-ts="${o.deadline_ts || ''}"></div>
         ${detailTimeline(o)}
         <div class="toolrow">
-          <button class="tool" onclick="addToCalendar('${o.id}')">${ic('calendar', 14)} Add deadline to calendar</button>
+          <button class="tool" onclick="planFromOpp('${o.id}')">${ic('calendar', 14)} Plan it in Scout</button>
+          <button class="tool" onclick="addToCalendar('${o.id}')">${ic('share', 14)} Export .ics</button>
           <button class="tool" onclick="shareOpp('${o.id}')">${ic('share', 14)} Share</button>
           <a class="tool" href="${esc(o.source_url)}" target="_blank" rel="noopener">${ic('arrow-up-right', 14)} Official page</a>
           ${remindBtnHTML(o.id, 'deadline')}
@@ -3949,6 +3950,7 @@ function atRiskItems() { return riskItems().filter((r) => r._sev <= 1); }
    between #vw-agent and #dash-body. All three redirect via DASH_ALIAS. */
 const DASH_SECTIONS = [
   ['today', 'Today', 'spark'],
+  ['calendar', 'Calendar', 'calendar'],
   ['board', 'Board', 'grid'],
   ['tracking', 'Tracking', 'view'],
   ['details', 'Your details', 'doc'],
@@ -4044,10 +4046,13 @@ function renderDash(sec, filter) {
   const stray = document.querySelector('#dash-body .agent-shell');
   if (stray) document.getElementById('vw-agent').appendChild(stray);
   if (sec === 'today') el.innerHTML = demoBanner() + dashToday();
+  else if (sec === 'calendar') el.innerHTML = demoBanner() + dashCalendar();
   else if (sec === 'tracking') el.innerHTML = demoBanner() + dashTracking();
   else if (sec === 'details') el.innerHTML = demoBanner() + dashDetails();
   else el.innerHTML = demoBanner() + dashToday();
   hydrateIcons(el);
+  // the calendar owns pointer/touch/keyboard behaviour, so it wires itself after paint
+  if (sec === 'calendar') wirePlanner(); else { closeInspector(); }
   animateIn(el);
   el.scrollTop = 0;
 }
@@ -5001,7 +5006,8 @@ function renderBlocks(blocks) {
       ${b.criteria.map((c) => { const [icn, col] = ELIG_ICON[c.status] || ELIG_ICON.unknown; return `<div class="ge-row"><span class="ge-i" style="color:${col}">${ic(icn, 14)}</span><b>${esc(c.label)}</b><span>${esc(c.note)}</span></div>`; }).join('')}</div>`;
     if (b.type === 'plan') return `<div class="gplan">${b.opp ? `<div class="ge-h" onclick="openDetail('${b.opp.id}')">${esc(b.opp.title)} — worked back from ${esc(b.opp.deadline)}</div>` : ''}
       <div class="plan">${b.steps.map((s, i) => `<div class="plan-step ${s.final ? 'final' : ''}"><span class="ps-n">${s.final ? ic('check', 13) : String(i + 1).padStart(2, '0')}</span><span class="ps-t">${esc(s.t)}</span><span class="ps-d">${esc(s.lbl)}</span></div>`).join('')}</div>
-      ${b.opp ? `<button class="tool" onclick="addToCalendar('${b.opp.id}')">${ic('calendar', 13)} Add deadline to calendar</button>` : ''}</div>`;
+      ${b.opp ? `<button class="tool" onclick="planFromOpp('${b.opp.id}')">${ic('calendar', 13)} Plan it in Scout</button>` : ''}
+      ${b.opp ? `<button class="tool" onclick="addToCalendar('${b.opp.id}')">${ic('share', 13)} Export .ics</button>` : ''}</div>`;
     if (b.type === 'compare') return `<div class="gcmp"><div class="gcmp-row gcmp-head"><span>Listing</span><span>Closes</span><span>Prize</span><span>Crowd</span><span>Fit</span></div>
       ${b.items.map((c) => `<div class="gcmp-row" onclick="openDetail('${c.id}')"><span class="tt">${esc(c.title.slice(0, 44))}</span><span class="${c.days_left <= 3 ? 'urgent' : ''}">${c.days_left}d</span><span>${esc(c.prize)}</span><span>${c.applied ? fmtIN(c.applied) : '—'}</span><b>${c.fit}%</b></div>`).join('')}</div>`;
     if (b.type === 'form') return genFormHTML();
