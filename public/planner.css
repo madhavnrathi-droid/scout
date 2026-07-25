@@ -10,6 +10,9 @@
 
    So: one hairline weight, few fills, no nested borders, and air. */
 
+/* the section owns its own measure */
+.dash-body.dash-wide { max-width: 1460px; }
+
 .pl {
   --pl-line: #F0EEE7;      /* the only rule weight in the grid */
   --pl-line2: #F6F4EF;
@@ -118,7 +121,8 @@
 /* height tiers: never render text the block cannot show in full */
 .pl-b.h-tiny { padding: 4px 9px; border-radius: 9px; }
 .pl-b.h-tiny b { -webkit-line-clamp: 1; font-size: 12px; }
-.pl-b.h-short b { -webkit-line-clamp: 2; }
+.pl-b.h-short b { -webkit-line-clamp: 1; }
+.pl-b.h-mid b { -webkit-line-clamp: 2; }
 .pl-b .t { font-size: 11.5px; line-height: 1.4; white-space: nowrap; color: color-mix(in srgb, var(--c) 62%, var(--ink2)); font-variant-numeric: tabular-nums; }
 .pl-b .why { font-size: 11px; line-height: 1.45; color: var(--ink3); margin-top: 3px;
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -231,11 +235,70 @@
 .pl-card footer button { color: var(--ink3); display: inline-flex; }
 .pl-card footer button:hover { color: var(--ink); }
 
-/* ══ INSPECTOR — generous inside, no inner boxes ══ */
-.pl-insp { position: fixed; top: 76px; right: 20px; bottom: 20px; width: 360px; z-index: 60;
-  background: var(--card); border: none; border-radius: 22px; box-shadow: 0 24px 70px rgba(16, 16, 16, .16);
-  padding: 24px 24px 28px; overflow-y: auto; animation: inspIn .22s var(--ease); }
-@keyframes inspIn { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
+/* ══ THE RAIL ══════════════════════════════════════════════
+   One column, two states: the default briefing, or the inspector for a
+   selected item. Never blank. Type follows Vanilla's label rule — uppercase,
+   0.1em tracking — and its 20/24/32 spacing scale. */
+.pl-split { display: grid; grid-template-columns: minmax(0, 1fr) 312px; gap: 32px; align-items: start; }
+/* the Planner board is already a full-width instrument — it does not share */
+.pl-split.solo { grid-template-columns: 1fr; }
+.pl-split.solo .pl-rail-col { display: none; }
+@media (max-width: 1180px) { .pl-split { grid-template-columns: minmax(0, 1fr) 272px; gap: 24px; } }
+/* Seven columns need real width. Below this the rail would squeeze each day to
+   ~75px, so the grid views take the whole measure and the rail stands down —
+   its content is still one tap away in Agenda and in the triage sheet.
+   Day / Agenda are single-column and keep the rail all the way down. */
+@media (max-width: 1370px) {
+  .pl-split.grid7 { grid-template-columns: 1fr; }
+  .pl-split.grid7 .pl-rail-col { display: none; }
+}
+.pl-stage { min-width: 0; }
+.pl-rail-col { position: sticky; top: 8px; align-self: start; max-height: calc(100vh - 96px);
+  overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--pl-line) transparent; }
+.pl-rail-col::-webkit-scrollbar { width: 6px; }
+.pl-rail-col::-webkit-scrollbar-thumb { background: var(--pl-line); border-radius: 3px; }
+.plr { display: flex; flex-direction: column; gap: 32px; }
+.plr-sec h5, .insp-sec h5 { font-size: 10px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--ink3); margin-bottom: 12px; font-weight: 600; }
+.plr-list { list-style: none; display: flex; flex-direction: column; gap: 2px; }
+.plr-item { display: grid; grid-template-columns: 8px 1fr auto; gap: 11px; align-items: start;
+  padding: 11px 10px; margin: 0 -10px; border-radius: 10px; cursor: pointer; transition: background .14s; }
+.plr-item:hover { background: var(--pl-soft); }
+.plr-pip { width: 7px; height: 7px; border-radius: 50%; background: var(--ink3); margin-top: 6px; }
+.plr-item b { font-size: 13.5px; font-weight: 600; line-height: 1.4; display: block; letter-spacing: -.012em; }
+.plr-item em { font-style: normal; font-size: 11.5px; line-height: 1.45; color: var(--ink3); display: block; margin-top: 2px; }
+.plr-go { color: var(--ink3); padding: 4px; border-radius: 8px; display: inline-flex; }
+.plr-go:hover { color: var(--ink); background: var(--pl-soft); }
+/* Vanilla's 5-step risk ramp, remapped for paper */
+.plr-item.r-critical .plr-pip { background: #C41E2A; }
+.plr-item.r-high     .plr-pip { background: var(--red); }
+.plr-item.r-medium   .plr-pip { background: var(--orange); }
+.plr-item.r-low      .plr-pip { background: #C9A227; }
+.plr-item.r-clear    .plr-pip { background: var(--green-deep); }
+.plr-item.r-critical em, .plr-item.r-high em { color: var(--red); }
+.plr-none { font-size: 12.5px; line-height: 1.6; color: var(--ink3); display: flex; gap: 7px; align-items: flex-start; }
+
+/* mini month */
+.mm-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.mm-h b { font-size: 13.5px; font-weight: 650; letter-spacing: -.015em; }
+.mm-h span { display: inline-flex; gap: 2px; }
+.mm-h button { width: 24px; height: 24px; border-radius: 6px; color: var(--ink3); display: inline-flex; align-items: center; justify-content: center; }
+.mm-h button:hover { background: var(--pl-soft); color: var(--ink); }
+.mm-w { display: grid; grid-template-columns: repeat(7, 1fr); margin-bottom: 4px; }
+.mm-w span { text-align: center; font-size: 9.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink3); }
+.mm-g { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
+.mm-c { position: relative; aspect-ratio: 1; border-radius: 50%; font-size: 11.5px; font-weight: 500;
+  color: var(--ink2); display: grid; place-items: center; transition: all .14s; }
+.mm-c:hover { background: var(--pl-soft); }
+.mm-c.out { color: var(--ink3); opacity: .4; }
+.mm-c.today { font-weight: 700; color: var(--red); }
+.mm-c.sel { background: var(--ink); color: #fff; }
+.mm-c i { position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%); width: 3px; height: 3px; border-radius: 50%; background: currentColor; opacity: .5; }
+
+/* ══ INSPECTOR — the rail's selected state ══ */
+.pl-rail-col.open { }
+@keyframes inspIn { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+.pl-rail-col.open > * { animation: inspIn .2s var(--ease); }
 .insp-h { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
 .insp-eyebrow { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700;
   letter-spacing: .1em; text-transform: uppercase; color: var(--c); }
@@ -310,8 +373,12 @@
   .pl-cap-bar { flex-basis: 100%; margin: 14px 0 0; }
   .pl-cap-act { flex-basis: 100%; margin-top: 16px; }
   .pl-board { grid-template-columns: repeat(2, 1fr); gap: 20px; }
-  .pl-insp { top: auto; left: 0; right: 0; bottom: 0; width: auto; max-height: 80vh; border-radius: 26px 26px 0 0;
-    animation: sheetUp .26s var(--ease); }
+  .pl-split { grid-template-columns: 1fr; gap: 34px; }
+  .pl-rail-col { position: static; max-height: none; }
+  /* selected: the rail lifts into a bottom sheet so it can't push the grid away */
+  .pl-rail-col.open { position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 90;
+    background: var(--card); border-radius: 26px 26px 0 0; padding: 24px; max-height: 82vh; overflow-y: auto;
+    box-shadow: 0 -18px 60px rgba(16,16,16,.18); animation: sheetUp .26s var(--ease); }
   @keyframes sheetUp { from { transform: translateY(100%); } to { transform: none; } }
 }
 @media (max-width: 720px) {

@@ -150,7 +150,7 @@ const S = {
   ledgerType: 'All', ledgerHorizon: 30, ledgerSort: 'prize',
   insightIdx: 0, insightTimer: null,
 };
-const SCOUT_V = 46;
+const SCOUT_V = 47;
 function ls(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch { return null; } }
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtIN = (n) => Number(n || 0).toLocaleString('en-IN');
@@ -4042,6 +4042,9 @@ function renderDash(sec, filter) {
     return;
   }
   el.style.display = ''; if (boardEl) boardEl.style.display = 'none';
+  // 1060px is a reading measure for the text sections; the calendar is a
+  // full-bleed instrument and needs the room, especially beside its rail.
+  el.classList.toggle('dash-wide', sec === 'calendar');
   // The chat shell lives in #vw-agent permanently now. Nothing relocates it.
   const stray = document.querySelector('#dash-body .agent-shell');
   if (stray) document.getElementById('vw-agent').appendChild(stray);

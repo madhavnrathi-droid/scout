@@ -132,7 +132,7 @@ function collectEvents() {
     .filter((e) => !hidden.has(e.cal))
     .map((e) => {
       const stage = e.stage || plan.stages[e.id] || (e.pipeStage === 'applied' ? 'done' : 'todo');
-      return Object.assign({}, e, { stage, state: deriveState(e, stage) });
+      return Object.assign({}, e, { stage, state: deriveState(e, stage), title: e.title || 'Untitled' });
     })
     .sort((a, b) => a.start - b.start || (a.point ? -1 : 1));
 }
@@ -464,8 +464,107 @@ function dashCalendar() {
       <span class="pl-q-hint" id="pl-q-hint"></span>
     </div>
 
-    <div class="pl-stage" id="pl-stage">${renderStage()}</div>
+    <div class="pl-split ${planView() === 'planner' ? 'solo' : ''} ${['week', 'month'].includes(planView()) ? 'grid7' : ''}">
+      <div class="pl-stage" id="pl-stage">${renderStage()}</div>
+      <aside class="pl-rail-col" id="pl-insp">${plRailHTML()}</aside>
+    </div>
   </section>`;
+}
+
+/* ═══════════ THE RAIL ═══════════
+   The right column is the most valuable space on the page, so it is never
+   blank. Unselected it answers "what should I do next?"; selected it becomes
+   the inspector for that one thing. Same column, two states.
+
+   Ordering follows Project Vanilla's ranking rule: every ranked item carries
+   the REASON it is ranked there, in words, next to it. A list that won't say
+   why it chose its order is just a list. */
+
+/* One 5-step severity ramp, ported from Vanilla's risk scale into light mode. */
+function severity(e) {
+  if (e.stage === 'done') return { k: 'clear', n: 0 };
+  const days = (e.start - Date.now()) / DAY_MS;
+  if (e.state === 'overdue') return { k: 'critical', n: 4 };
+  if (days <= 1) return { k: 'high', n: 3 };
+  if (days <= 3) return { k: 'medium', n: 2 };
+  if (days <= 7) return { k: 'low', n: 1 };
+  return { k: 'clear', n: 0 };
+}
+
+/* What actually needs the user, worst first, each with its reason. */
+function needsYou() {
+  const out = [];
+  for (const e of collectEvents()) {
+    if (e.stage === 'done') continue;
+    if (!(e.title || '').trim()) continue;      // an unnamed scrap is not a priority
+    const sev = severity(e);
+    let why = null;
+    if (e.state === 'overdue') why = e.cal === 'deadline' ? 'closed — you never sent it' : 'this slot has passed';
+    else if (e.cal === 'deadline') {
+      const d = Math.ceil((e.start - Date.now()) / DAY_MS);
+      const pct = (S.pipe[e.oppId] || {}).pct || 0;
+      if (d <= 3) why = `${d <= 0 ? 'closes today' : d + 'd left'} · draft ${pct}% done`;
+      else if (d <= 7 && pct < 60) why = `${d}d left · draft ${pct}% done`;
+    } else if (e.state === 'blocked') why = 'you marked this blocked';
+    if (why) out.push({ e, sev, why });
+  }
+  return out.sort((a, b) => b.sev.n - a.sev.n || a.e.start - b.e.start).slice(0, 5);
+}
+
+function plRailHTML() {
+  const need = needsYou();
+  const next = collectEvents().filter((e) => e.stage !== 'done' && (e.end || e.start) >= Date.now()).slice(0, 4);
+  return `<div class="plr">
+    ${planView() === 'month' ? '' : miniMonth()}
+    <section class="plr-sec">
+      <h5>Needs you</h5>
+      ${need.length ? `<ul class="plr-list">${need.map(({ e, sev, why }) => `
+        <li class="plr-item r-${sev.k}" data-id="${e.id}">
+          <i class="plr-pip"></i>
+          <div><b>${esc(e.title)}</b><em>${esc(why)}</em></div>
+          ${e.oppId ? `<button class="plr-go" onclick="event.stopPropagation();applyWithScout('${e.oppId}')" title="Let Scout draft it">${ic('spark', 13)}</button>` : ''}
+        </li>`).join('')}</ul>`
+        : `<p class="plr-none">${ic('check', 14)} Nothing is at risk. That is the whole point.</p>`}
+    </section>
+    <section class="plr-sec">
+      <h5>Up next</h5>
+      ${next.length ? `<ul class="plr-list tight">${next.map((e) => `
+        <li class="plr-item" data-id="${e.id}">
+          <i class="plr-pip" style="background:${CALS[e.cal].color}"></i>
+          <div><b>${esc(e.title)}</b><em>${fmtDayLabel(new Date(e.start))}${e.point ? '' : ' · ' + fmtTime(e.start)}</em></div>
+        </li>`).join('')}</ul>`
+        : `<p class="plr-none">Nothing scheduled ahead.</p>`}
+    </section>
+  </div>`;
+}
+
+/* A month at a glance — jump anywhere without leaving the week. */
+function miniMonth() {
+  const a = new Date(PL.anchor), pr = planPrefs();
+  const first = new Date(a.getFullYear(), a.getMonth(), 1);
+  const gs = startOfWeek(first, pr.firstDay);
+  const all = collectEvents();
+  const busy = new Set(all.map((e) => startOfDay(e.start).getTime()));
+  let cells = '';
+  for (let i = 0; i < 42; i++) {
+    const d = addDays(gs, i), t = startOfDay(d).getTime();
+    if (i >= 35 && d.getMonth() !== a.getMonth()) break;
+    cells += `<button class="mm-c ${d.getMonth() !== a.getMonth() ? 'out' : ''} ${isToday(d) ? 'today' : ''} ${sameDay(d, a) ? 'sel' : ''}"
+      onclick="PL.anchor=${t};renderPlanner()">${d.getDate()}${busy.has(t) ? '<i></i>' : ''}</button>`;
+  }
+  return `<section class="plr-sec mm">
+    <header class="mm-h"><b>${MONTHS[a.getMonth()]} ${a.getFullYear()}</b>
+      <span><button onclick="planGo(-1)" aria-label="Previous month">${chev(-1)}</button><button onclick="planGo(1)" aria-label="Next month">${chev(1)}</button></span></header>
+    <div class="mm-w">${Array.from({ length: 7 }, (_, i) => `<span>${DOW[(pr.firstDay + i) % 7][0]}</span>`).join('')}</div>
+    <div class="mm-g">${cells}</div>
+  </section>`;
+}
+function renderRail() {
+  const host = document.getElementById('pl-insp'); if (!host) return;
+  host.classList.remove('open');
+  host.innerHTML = plRailHTML();
+  hydrateIcons(host);
+  host.querySelectorAll('.plr-item').forEach((li) => li.addEventListener('click', () => openInspector(li.dataset.id)));
 }
 
 /* The honesty strip: hours you have vs hours you owe. Ref-2's stat row. */
@@ -571,10 +670,11 @@ function blockEl(e, dayS, lane, of, conflict) {
   const w = 100 / of;
   /* Show only what actually fits. Clipped text reads as broken, and a block
      that has to truncate its own reason is better off not showing one:
-       < 46px  title only, one line
-       < 92px  title + time
-       ≥ 92px  title + time + why  */
-  const tier = h < 46 ? 'tiny' : h < 116 ? 'short' : 'full';
+       < 46px   title only, one line
+       < 78px   title (1 line) + time
+       < 116px  title (2 lines) + time
+       ≥ 116px  title (2 lines) + time + why  */
+  const tier = h < 46 ? 'tiny' : h < 78 ? 'short' : h < 116 ? 'mid' : 'full';
   return `<article class="pl-b h-${tier} s-${e.state} ${conflict ? 'clash' : ''} ${e.stage === 'done' ? 'is-done' : ''}"
      style="--c:${c.color};top:${top}px;height:${h}px;left:${lane * w}%;width:calc(${w}% - 5px)"
      data-id="${e.id}" tabindex="0" role="button"
@@ -780,6 +880,10 @@ function wirePlanner() {
     wb.scrollTop = Math.max(0, (planPrefs().workStart - 1) * PX_H);
     wb.dataset.scrolled = '1';
   }
+  const railHost = document.getElementById('pl-insp');
+  if (railHost && !PL.sel) {
+    railHost.querySelectorAll('.plr-item').forEach((li) => li.addEventListener('click', () => openInspector(li.dataset.id)));
+  }
   const main = document.querySelector('.dash-main');
   if (main && !PL.kept) { main.scrollTop = 0; }
   PL.kept = false;
@@ -824,25 +928,31 @@ function onPointerDown(ev) {
     return;
   }
 
-  /* drag on empty grid → carve out a block */
+  /* Drag on empty grid → carve out a block. A stationary CLICK must never make
+     one: that produced drifts of empty "Untitled" blocks stacked on each other.
+     Nothing is created until the pointer has actually travelled. */
   const a = snapMs(yToMs(ev.clientY));
+  const y0 = ev.clientY;
   ev.preventDefault();
-  const ghost = document.createElement('div');
-  ghost.className = 'pl-ghost';
-  grid.appendChild(ghost);
+  let ghost = null;
   const paint = (s, e2) => {
+    if (!ghost) { ghost = document.createElement('div'); ghost.className = 'pl-ghost'; grid.appendChild(ghost); }
     ghost.style.top = (s - dayS) / 36e5 * PX_H + 'px';
     ghost.style.height = Math.max(8, (e2 - s) / 36e5 * PX_H) + 'px';
     ghost.textContent = fmtRange(s, e2);
   };
-  paint(a, a + 30 * 6e4);
-  const move = (e2) => { const b = snapMs(yToMs(e2.clientY)); paint(Math.min(a, b), Math.max(a, b) + (Math.abs(b - a) < 6e4 ? 30 * 6e4 : 0)); };
+  const move = (e2) => {
+    if (Math.abs(e2.clientY - y0) < 6) return;          // still a click, not a drag
+    const b = snapMs(yToMs(e2.clientY));
+    paint(Math.min(a, b), Math.max(a, b));
+  };
   const up = (e2) => {
     document.removeEventListener('pointermove', move); document.removeEventListener('pointerup', up);
+    if (ghost) ghost.remove();
+    if (Math.abs(e2.clientY - y0) < 6) { PL.sel = null; renderRail(); return; }   // click = deselect
     const b = snapMs(yToMs(e2.clientY));
-    const s = Math.min(a, b), en = Math.max(a, b) + (Math.abs(b - a) < 6e4 ? 30 * 6e4 : 0);
-    ghost.remove();
-    createAt(s, en);
+    const s = Math.min(a, b), en = Math.max(a, b);
+    if (en - s >= 15 * 6e4) createAt(s, en);
   };
   document.addEventListener('pointermove', move); document.addEventListener('pointerup', up);
 }
@@ -959,8 +1069,7 @@ function quickHint(text) {
 function openInspector(id, keep) {
   const e = eventById(id); if (!e) return closeInspector();
   PL.sel = id;
-  let host = document.getElementById('pl-insp');
-  if (!host) { host = document.createElement('aside'); host.id = 'pl-insp'; host.className = 'pl-insp'; document.getElementById('pl-root').appendChild(host); }
+  const host = document.getElementById('pl-insp'); if (!host) return;
   const c = CALS[e.cal] || CALS.block;
   const derived = c.derived;
   const opp = e.oppId ? (S.pipe || {})[e.oppId] : null;
@@ -1024,7 +1133,7 @@ function openInspector(id, keep) {
   host.classList.add('open');
   if (!keep) host.scrollTop = 0;
 }
-function closeInspector() { PL.sel = null; const h = document.getElementById('pl-insp'); if (h) h.remove(); }
+function closeInspector() { PL.sel = null; renderRail(); }
 function toLocalInput(ms) {
   const d = new Date(ms - d0off(ms));
   return d.toISOString().slice(0, 16);
