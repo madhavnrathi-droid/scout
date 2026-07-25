@@ -74,6 +74,12 @@ function fmtTime(ms) {
   const ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12;
   return m ? `${h}:${String(m).padStart(2, '0')}${ap}` : `${h}${ap}`;
 }
+/* "10:14 – 11:44am" rather than "10:14am — 11:44am": inside a ~145px column the
+   long form wraps to two lines and shoves everything below it out of the block. */
+function fmtRange(a, b) {
+  const A = fmtTime(a), B = fmtTime(b);
+  return (A.slice(-2) === B.slice(-2) ? A.slice(0, -2) : A) + '–' + B;
+}
 const plDur = (ms) => { const h = ms / 36e5; return h >= 1 ? `${Number(h.toFixed(1))}h` : `${Math.round(ms / 6e4)}m`; };
 function fmtDayLabel(d) {
   if (isToday(d)) return 'Today';
@@ -505,7 +511,7 @@ function toggleCal(k) {
 }
 
 /* ————— WEEK (ref 5) ————— */
-const PX_H = 56;                        // one hour of grid
+const PX_H = 76;                        // one hour of grid — the refs breathe
 function viewWeek() {
   const pr = planPrefs();
   const s = startOfWeek(new Date(PL.anchor), pr.firstDay);
@@ -563,14 +569,20 @@ function blockEl(e, dayS, lane, of, conflict) {
   const top = (Math.max(e.start, dayS) - dayS) / 36e5 * PX_H;
   const h = Math.max(22, (Math.min(e.end, dayS + DAY_MS) - Math.max(e.start, dayS)) / 36e5 * PX_H);
   const w = 100 / of;
-  return `<article class="pl-b s-${e.state} ${conflict ? 'clash' : ''} ${e.stage === 'done' ? 'is-done' : ''}"
-     style="--c:${c.color};top:${top}px;height:${h}px;left:${lane * w}%;width:calc(${w}% - 4px)"
+  /* Show only what actually fits. Clipped text reads as broken, and a block
+     that has to truncate its own reason is better off not showing one:
+       < 46px  title only, one line
+       < 92px  title + time
+       ≥ 92px  title + time + why  */
+  const tier = h < 46 ? 'tiny' : h < 116 ? 'short' : 'full';
+  return `<article class="pl-b h-${tier} s-${e.state} ${conflict ? 'clash' : ''} ${e.stage === 'done' ? 'is-done' : ''}"
+     style="--c:${c.color};top:${top}px;height:${h}px;left:${lane * w}%;width:calc(${w}% - 5px)"
      data-id="${e.id}" tabindex="0" role="button"
      aria-label="${esc(e.title)}, ${fmtTime(e.start)} to ${fmtTime(e.end)}${conflict ? ', clashes' : ''}">
     <div class="pl-b-in">
       <b>${esc(e.title)}</b>
-      <span class="t">${fmtTime(e.start)} – ${fmtTime(e.end)}</span>
-      ${h > 64 && e.why ? `<span class="why">${esc(e.why)}</span>` : ''}
+      ${tier !== 'tiny' ? `<span class="t">${fmtRange(e.start, e.end)}</span>` : ''}
+      ${tier === 'full' && e.why ? `<span class="why">${esc(e.why)}</span>` : ''}
     </div>
     ${e.stage === 'done' ? `<span class="pl-b-badge">${ic('check', 11)} Done</span>` : ''}
     ${conflict ? `<span class="pl-b-clash" title="Clashes with another block">!</span>` : ''}
@@ -821,7 +833,7 @@ function onPointerDown(ev) {
   const paint = (s, e2) => {
     ghost.style.top = (s - dayS) / 36e5 * PX_H + 'px';
     ghost.style.height = Math.max(8, (e2 - s) / 36e5 * PX_H) + 'px';
-    ghost.textContent = `${fmtTime(s)} – ${fmtTime(e2)}`;
+    ghost.textContent = fmtRange(s, e2);
   };
   paint(a, a + 30 * 6e4);
   const move = (e2) => { const b = snapMs(yToMs(e2.clientY)); paint(Math.min(a, b), Math.max(a, b) + (Math.abs(b - a) < 6e4 ? 30 * 6e4 : 0)); };
@@ -845,7 +857,7 @@ function startDrag(el, compute, e) {
     const dayS = col == null ? startOfDay(start).getTime() : col;
     el.style.top = (start - dayS) / 36e5 * PX_H + 'px';
     el.style.height = Math.max(22, (end - start) / 36e5 * PX_H) + 'px';
-    const t = el.querySelector('.t'); if (t) t.textContent = `${fmtTime(start)} – ${fmtTime(end)}`;
+    const t = el.querySelector('.t'); if (t) t.textContent = fmtRange(start, end);
     el.dataset.ns = start; el.dataset.ne = end;
   };
   const up = () => {
