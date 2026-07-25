@@ -24,15 +24,69 @@
 .board-wrap .react-flow__handle{width:8px; height:8px; background:var(--ink3); border:2px solid var(--paper); opacity:0; transition:opacity .15s}
 .board-wrap .react-flow__node:hover .react-flow__handle{opacity:1}
 
-/* ── the opportunity node ── */
+/* ── the opportunity node ──
+   The Discover card at canvas scale: cover art on top, body beneath. */
 .opp-node{width:206px; background:var(--paper); border:1px solid var(--hair); border-radius:14px;
-  padding:12px 13px 11px; box-shadow:0 1px 2px rgba(16,16,16,.04),0 8px 24px rgba(16,16,16,.06);
+  box-shadow:0 1px 2px rgba(16,16,16,.04),0 8px 24px rgba(16,16,16,.06);
   position:relative; overflow:hidden; cursor:grab; transition:box-shadow .16s, transform .16s}
 .opp-node:active{cursor:grabbing}
 .opp-node.sel{box-shadow:0 0 0 2px var(--sel),0 12px 34px rgba(16,16,16,.16)}
-.opp-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px}
+
+/* ── cover art ──
+   16/9, not the feed's 4/3: at 206px wide, 4:3 art is 155px against ~130px of
+   text — the picture outweighs the words and the node busts its lane. 16/9 is
+   116px and still legible when zoomed out. */
+.opp-im{position:relative; aspect-ratio:16/9; overflow:hidden; display:block;
+  --tint:var(--ink3);
+  background:linear-gradient(155deg,
+    color-mix(in srgb,var(--tint) 17%,var(--paper)),
+    color-mix(in srgb,var(--tint) 5%,var(--paper)))}
+
+/* domain tint — dom[0], mapped onto tokens already in the palette. No new hues. */
+.opp-im[data-dom="AI/ML"], .opp-im[data-dom="Engineering"]{--tint:var(--blue)}
+.opp-im[data-dom="ClimaTech"], .opp-im[data-dom="Life Sciences"],
+.opp-im[data-dom="HealthTech"]{--tint:var(--green)}
+.opp-im[data-dom="Business"], .opp-im[data-dom="Finance"]{--tint:var(--amber)}
+.opp-im[data-dom="Design"], .opp-im[data-dom="Arts"]{--tint:var(--rose)}
+.opp-im[data-dom="Policy"], .opp-im[data-dom="Social Impact"]{--tint:var(--red-deep)}
+
+/* tier: banner — letterboxed over a blurred copy of itself, as .im.contain does */
+.opp-mainimg{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; display:block}
+.opp-im.tier-banner .opp-mainimg{object-fit:contain; z-index:1}
+.opp-blurfill{position:absolute; inset:-10%; width:120%; height:120%; max-width:none;
+  object-fit:cover; filter:blur(14px) saturate(1.2); opacity:.85; z-index:0}
+
+/* tier: crest — the stock photo becomes texture; the org's creative becomes the identity */
+.opp-wash{position:absolute; inset:-8%; width:116%; height:116%; max-width:none;
+  object-fit:cover; filter:blur(13px) saturate(.8); opacity:.38; z-index:0}
+.opp-crest{position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); z-index:2;
+  width:52px; height:52px; border-radius:13px; padding:5px; background:var(--paper);
+  box-shadow:0 3px 12px rgba(16,16,16,.20); display:block}
+.opp-crest img{width:100%; height:100%; object-fit:contain; display:block}
+
+/* tier: plate — no art at all, and it must look chosen */
+.opp-mono{position:absolute; inset:0; z-index:1; display:flex; align-items:center; justify-content:center;
+  font-size:38px; font-weight:600; letter-spacing:-.02em; line-height:1;
+  color:color-mix(in srgb,var(--tint) 55%,var(--ink3)); opacity:.55}
+
+/* scrim only where a photograph can swallow the chips sitting on it */
+.opp-scrim{position:absolute; inset:0; z-index:2; pointer-events:none;
+  background:linear-gradient(180deg,rgba(16,16,16,.34) 0%,rgba(16,16,16,0) 44%,
+                                    rgba(16,16,16,0) 60%,rgba(16,16,16,.26) 100%)}
+.opp-im:not(.tier-banner) .opp-scrim{display:none}
+
+.opp-type{position:absolute; left:8px; top:8px; z-index:3; max-width:64%;
+  font-size:9px; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+  padding:3px 7px; border-radius:99px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+.opp-im.tier-banner .opp-type{color:#fff; background:rgba(16,16,16,.55);
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px)}
+.opp-im:not(.tier-banner) .opp-type{color:var(--ink2);
+  background:color-mix(in srgb,var(--paper) 84%,var(--tint))}
+.opp-im .opp-stage{position:absolute; left:8px; bottom:8px; z-index:3}
+
+.opp-bd{padding:10px 12px 11px}
 .opp-stage{font-size:9.5px; font-weight:700; letter-spacing:.07em; text-transform:uppercase; padding:3px 8px; border-radius:99px}
-.opp-stage.s-saved{background:#EFEDE6; color:var(--ink3)}
+.opp-stage.s-saved{background:color-mix(in srgb,var(--ink3) 14%,var(--paper)); color:var(--ink3)}
 .opp-stage.s-draft{background:color-mix(in srgb,var(--amber) 15%,var(--paper)); color:var(--amber)}
 .opp-stage.s-applied{background:color-mix(in srgb,var(--blue) 15%,var(--paper)); color:var(--blue)}
 .opp-stage.s-result{background:color-mix(in srgb,var(--green) 15%,var(--paper)); color:var(--green)}
@@ -40,7 +94,33 @@
 .opp-title{font-size:14px; font-weight:600; line-height:1.25; letter-spacing:-.01em;
   display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden}
 .opp-org{font-size:11.5px; color:var(--ink3); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-.opp-foot{display:flex; align-items:center; justify-content:space-between; margin-top:10px}
+/* prize / crowd chips, ported from the feed's card chips */
+.opp-chips{display:flex; gap:5px; margin-top:8px; flex-wrap:wrap}
+.opp-chip{font-size:10px; font-weight:600; color:var(--ink2);
+  background:color-mix(in srgb,var(--ink3) 12%,var(--paper));
+  border-radius:99px; padding:2px 7px; white-space:nowrap}
+.opp-chip.money{color:var(--green); background:color-mix(in srgb,var(--green) 12%,var(--paper))}
+.opp-right{display:inline-flex; align-items:center; gap:6px}
+.opp-foot{display:flex; align-items:center; justify-content:space-between; margin-top:9px}
+
+/* ── zoom tiers ──
+   Detail costs attention. Zoomed out the board should read as a *map* — art,
+   stage colour and a title — so drop the small type that turns to mush anyway. */
+.board-wrap[data-zoom="mid"] .opp-chips,
+.board-wrap[data-zoom="mid"] .opp-org{display:none}
+/* far: the board is a MAP — art, stage colour and a title. Blur filters are the
+   GPU cost that shows up at 30 visible nodes, so drop those first. */
+.board-wrap[data-zoom="far"] .opp-blurfill,
+.board-wrap[data-zoom="far"] .opp-wash{filter:none}
+.board-wrap[data-zoom="far"] .opp-scrim,
+.board-wrap[data-zoom="far"] .opp-type,
+.board-wrap[data-zoom="far"] .opp-org,
+.board-wrap[data-zoom="far"] .opp-chips,
+.board-wrap[data-zoom="far"] .opp-foot{display:none}
+/* stays at 2 lines — a 3rd grows the node exactly where lane collision is worst */
+.board-wrap[data-zoom="far"] .opp-title{font-size:15px; -webkit-line-clamp:2}
+.board-wrap[data-zoom="far"] .opp-crest{width:44px; height:44px; box-shadow:none}
+.board-wrap[data-zoom="far"] .react-flow__edge-text{display:none}
 .opp-heat{font-size:11px; color:var(--ink3); display:inline-flex; align-items:center; gap:5px}
 .opp-heat.h-now{color:var(--red-deep); font-weight:600}
 .opp-heat.h-soon{color:var(--amber); font-weight:500}
@@ -103,3 +183,40 @@
   .board-bar{bottom:auto; top:10px}
 }
 @media (prefers-reduced-motion:reduce){.opp-node{transition:none}}
+
+/* ── create palette ── */
+/* Create tools sit top-centre, clear of the left lane-label gutter (which the
+   lanes own at left:16px) and mirroring the view tools at bottom-centre. */
+.board-tools{position:absolute; left:50%; transform:translateX(-50%); top:16px; z-index:6; display:flex; gap:8px}
+.bt{background:var(--paper); border:1px solid var(--hair); color:var(--ink); font:600 12.5px system-ui; padding:8px 13px; border-radius:11px; cursor:pointer; box-shadow:0 4px 16px rgba(16,16,16,.08)}
+.bt:hover{border-color:var(--ink3)}
+
+/* ── note node ── */
+.note-node{min-width:150px; min-height:96px; border-radius:12px; padding:10px 11px 8px; box-shadow:0 2px 4px rgba(16,16,16,.06),0 10px 26px rgba(16,16,16,.09); position:relative; display:flex}
+.note-node.sel{box-shadow:0 0 0 2px var(--sel),0 12px 30px rgba(16,16,16,.16)}
+.note-text{flex:1; border:none; background:transparent; resize:none; font:13.5px/1.45 system-ui; color:#3A3730; outline:none; padding:0; min-height:74px}
+.note-text::placeholder{color:rgba(58,55,48,.4)}
+.note-swatch{position:absolute; top:7px; right:7px; width:13px; height:13px; border-radius:50%; border:1.5px solid rgba(0,0,0,.15); background:rgba(255,255,255,.5); cursor:pointer; opacity:0; transition:opacity .15s}
+.note-node:hover .note-swatch, .note-node.sel .note-swatch{opacity:1}
+.nz-line{border-color:var(--sel) !important}
+.nz-h{background:var(--paper) !important; border:1.5px solid var(--sel) !important; width:8px !important; height:8px !important}
+
+/* ── milestone node ── */
+.ms-node{display:flex; align-items:stretch; gap:0; background:var(--ink); color:var(--paper); border-radius:11px; overflow:hidden; box-shadow:0 8px 22px rgba(16,16,16,.22); min-width:170px}
+.ms-node.sel{box-shadow:0 0 0 2px var(--sel),0 10px 28px rgba(16,16,16,.3)}
+.ms-flag{width:5px; background:var(--ink3); flex:0 0 auto}
+.ms-flag.h-now{background:var(--red)} .ms-flag.h-soon{background:var(--amber)} .ms-flag.h-gone{background:var(--ink3)}
+.ms-body{padding:9px 12px 9px 11px; flex:1; min-width:0}
+.ms-label{background:transparent; border:none; color:var(--paper); font:600 13px system-ui; outline:none; width:100%; padding:0}
+.ms-label::placeholder{color:rgba(255,255,255,.45)}
+.ms-date{display:flex; align-items:center; gap:6px; margin-top:3px; cursor:pointer}
+.ms-when{font-size:11px; color:rgba(255,255,255,.6)}
+.ms-when.h-now{color:var(--red)} .ms-when.h-soon{color:var(--amber)}
+.ms-dateinput{width:16px; opacity:.5; background:transparent; border:none; color:var(--paper); cursor:pointer; filter:invert(1)}
+
+/* ── edges: quiet ink, readable label ── */
+.board-wrap .react-flow__edge-path{stroke:var(--ink3); stroke-width:1.5}
+.board-wrap .react-flow__edge.selected .react-flow__edge-path{stroke:var(--ink); stroke-width:2}
+.board-wrap .react-flow__edge-text{fill:var(--ink2); font-size:10px; font-weight:600}
+.board-wrap .react-flow__edge-textbg{fill:var(--canvas)}
+.board-wrap .react-flow__connectionline .react-flow__connection-path{stroke:var(--rose); stroke-width:2}

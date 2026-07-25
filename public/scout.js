@@ -150,7 +150,7 @@ const S = {
   ledgerType: 'All', ledgerHorizon: 30, ledgerSort: 'prize',
   insightIdx: 0, insightTimer: null,
 };
-const SCOUT_V = 43;
+const SCOUT_V = 44;
 function ls(k, v) { try { if (v === undefined) return JSON.parse(localStorage.getItem(k)); localStorage.setItem(k, JSON.stringify(v)); } catch { return null; } }
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtIN = (n) => Number(n || 0).toLocaleString('en-IN');
@@ -4032,7 +4032,13 @@ function renderDash(sec, filter) {
   document.getElementById('dash-crumb').innerHTML = `<span>Dashboard</span><em>/</em><b>${meta[1] || sec}</b>`;
   // The board is a persistent React island — shown/hidden, never regenerated,
   // so its camera/selection/undo survive section switches.
-  if (sec === 'board') { el.style.display = 'none'; boardEl.style.display = 'block'; ensureBoard(boardEl); renderDashNav(); return; }
+  if (sec === 'board') {
+    el.style.display = 'none'; boardEl.style.display = 'block'; ensureBoard(boardEl); renderDashNav();
+    // the board mounted (or was hidden) while display:none — tell it to re-measure
+    // its nodes now that the pane is visible, so persisted edges route correctly.
+    requestAnimationFrame(() => window.dispatchEvent(new CustomEvent('scout:board-shown')));
+    return;
+  }
   el.style.display = ''; if (boardEl) boardEl.style.display = 'none';
   // The chat shell lives in #vw-agent permanently now. Nothing relocates it.
   const stray = document.querySelector('#dash-body .agent-shell');
