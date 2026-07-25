@@ -418,7 +418,32 @@ function plSetStage(id, stage) {
    One inline glyph is cheaper than polluting the shared IC map. */
 const chev = (dir) => `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${dir < 0 ? 'M15 18l-6-6 6-6' : 'M9 18l6-6-6-6'}"/></svg>`;
 
-const VIEWS = [['month', 'Month'], ['week', 'Week'], ['day', 'Day'], ['agenda', 'Agenda'], ['planner', 'Planner']];
+/* ————— artwork —————
+   The same three-tier rule the Board uses, at list scale: a real org banner is
+   shown as-is; a stock photo is skipped entirely in favour of the org's own
+   thumb; with neither we draw a tinted monogram. At 44px a repeated stock
+   photo is pure noise, so `img` is only trusted when realImg says it is real. */
+function artFor(oppId, title) {
+  const p = (S.pipe || {})[String(oppId)];
+  const o = (p && p.snap) || {};
+  const live = (typeof resolveOpp === 'function' && resolveOpp(oppId)) || {};
+  const src = (live.realImg ?? o.realImg) ? (live.img || o.img) : (live.imgThumb || o.imgThumb);
+  const mono = ((live.org || o.org || title || '?').trim()[0] || '?').toUpperCase();
+  const dom = ((live.dom || o.dom || [])[0]) || '';
+  return { src, mono, dom };
+}
+function artHTML(e, cls) {
+  if (!e.oppId) {
+    const c = CALS[e.cal] || CALS.block;
+    return `<span class="pl-art ${cls || ''} is-kind" style="--c:${c.color}">${ic(c.icon, 15)}</span>`;
+  }
+  const a = artFor(e.oppId, e.title);
+  return `<span class="pl-art ${cls || ''}" data-dom="${esc(a.dom)}">${a.src
+    ? `<img src="${esc(a.src)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`
+    : ''}<i>${esc(a.mono)}</i></span>`;
+}
+
+const VIEWS = [['month', 'Month'], ['week', 'Week'], ['day', 'Day'], ['list', 'List'], ['agenda', 'Agenda'], ['planner', 'Planner']];
 const PL = { anchor: Date.now(), view: null, sel: null, dragging: null };
 
 function planView() { return PL.view || planPrefs().view || 'week'; }
@@ -533,7 +558,7 @@ function plRailHTML() {
       <h5>Needs you</h5>
       ${need.length ? `<ul class="plr-list">${need.map(({ e, sev, why }) => `
         <li class="plr-item r-${sev.k}" data-id="${e.id}">
-          <i class="plr-pip"></i>
+          <i class="plr-pip"></i>${artHTML(e, 'xs')}
           <div><b>${esc(e.title)}</b><em>${esc(why)}</em></div>
           ${e.oppId ? `<button class="plr-go" onclick="event.stopPropagation();applyWithScout('${e.oppId}')" title="Let Scout draft it">${ic('spark', 13)}</button>` : ''}
         </li>`).join('')}</ul>`
@@ -600,6 +625,7 @@ function renderStage() {
   const v = planView();
   if (v === 'month') return viewMonth();
   if (v === 'day') return viewDay();
+  if (v === 'list') return viewList();
   if (v === 'agenda') return viewAgenda();
   if (v === 'planner') return viewPlanner();
   return viewWeek();
@@ -692,6 +718,7 @@ function blockEl(e, dayS, lane, of, conflict) {
      style="--c:${c.color};top:${top}px;height:${h}px;left:${lane * w}%;width:calc(${w}% - 5px)"
      data-id="${e.id}" tabindex="0" role="button"
      aria-label="${esc(e.title)}, ${fmtTime(e.start)} to ${fmtTime(e.end)}${conflict ? ', clashes' : ''}">
+    ${(tier === 'full' || tier === 'mid') && e.oppId ? artHTML(e, 'xs corner') : ''}
     <div class="pl-b-in">
       <b>${esc(e.title)}</b>
       ${tier !== 'tiny' ? `<span class="t">${fmtRange(e.start, e.end)}</span>` : ''}
@@ -789,6 +816,7 @@ function agendaRow(e, last) {
     <span class="pl-r-t">${e.point ? '' : fmtTime(e.start)}</span>
     <button class="pl-r-box ${done ? 'on' : ''}" style="--c:${c.color}" onclick="event.stopPropagation();plSetStage('${e.id}','${done ? 'todo' : 'done'}')"
       aria-label="${done ? 'Mark not done' : 'Mark done'}">${done ? ic('check', 12) : ''}</button>
+    ${artHTML(e, 'sm')}
     <div class="pl-r-m">
       <b>${esc(e.title)}</b>
       ${e.sub || e.why ? `<i>${ic('link', 11)} ${esc(e.sub || e.why)}</i>` : ''}
@@ -799,6 +827,52 @@ function agendaRow(e, last) {
       ${e.oppId ? `<button class="pl-r-open" onclick="event.stopPropagation();openDetail('${e.oppId}')">Open ${ic('arrow-up-right', 11)}</button>` : ''}
     </div>
   </li>`;
+}
+
+/* ————— LIST —————
+   Ref 3's catalog table: a thumbnail, the name with its source beneath, then
+   typed columns. A calendar answers "when"; this answers "what have I got",
+   which is the question you ask when you are deciding rather than doing.
+   Columns collapse away as the measure narrows rather than scrolling sideways. */
+function viewList() {
+  const all = collectEvents().filter((e) => !e.untitled);
+  if (!all.length) {
+    return `<div class="pl-empty">${ic('layers', 22)}<b>Nothing to list yet</b>
+      <p>Save something in Discover, or type in the box above, and it shows up here.</p>
+      <button class="pill pill-dark" onclick="closeDash();goV('discover')">Find something</button></div>`;
+  }
+  const now = Date.now();
+  const rows = all.map((e) => {
+    const p = e.oppId ? (S.pipe || {})[e.oppId] : null;
+    const days = Math.ceil((e.start - now) / DAY_MS);
+    const heat = deadlineHeat(days);
+    const match = e.oppId && typeof matchScore === 'function' ? matchScore(e.oppId) : null;
+    const c = CALS[e.cal] || CALS.block;
+    return `<tr class="pl-lr s-${e.state}" data-id="${e.id}" tabindex="0">
+      <td class="c-name">
+        ${artHTML(e, 'md')}
+        <span class="lr-t"><b>${esc(e.title)}</b><em>${esc(e.org || e.sub || c.label.replace(/s$/, ''))}</em></span>
+      </td>
+      <td class="c-kind"><span class="lr-chip" style="--c:${c.color}"><i></i>${c.label.replace(/s$/, '')}</span></td>
+      <td class="c-when"><b>${fmtDayLabel(new Date(e.start))}</b><em>${e.point ? '' : fmtRange(e.start, e.end)}</em></td>
+      <td class="c-heat"><span class="lr-heat h-${heat.cls}">${heat.t}</span></td>
+      <td class="c-stage"><span class="lr-stage st-${e.stage}">${STAGE_LABEL_P[e.stage] || 'To-do'}</span></td>
+      <td class="c-fit">${match != null ? `<b>${match}%</b>` : '<span class="lr-dash">—</span>'}</td>
+      <td class="c-act">
+        ${e.oppId ? `<button onclick="event.stopPropagation();applyWithScout('${e.oppId}')" title="Let Scout draft it">${ic('spark', 14)}</button>` : ''}
+        <button onclick="event.stopPropagation();plSetStage('${e.id}','${e.stage === 'done' ? 'todo' : 'done'}')" title="${e.stage === 'done' ? 'Mark not done' : 'Mark done'}">${ic('check', 14)}</button>
+      </td>
+    </tr>`;
+  }).join('');
+  return `<div class="pl-list">
+    <table>
+      <thead><tr>
+        <th class="c-name">Item</th><th class="c-kind">Kind</th><th class="c-when">When</th>
+        <th class="c-heat">Deadline</th><th class="c-stage">Stage</th><th class="c-fit">Fit</th><th class="c-act"></th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
 }
 
 /* ————— PLANNER (stages, usable beyond the calendar) ————— */
@@ -826,7 +900,7 @@ function planCard(e) {
       <span class="pl-cchip" style="--c:${c.color}">${ic(c.icon, 12)}${c.label.replace(/s$/, '')}</span>
       ${STATE_WORD[e.state] ? `<span class="pl-cchip st-${e.state}">${STATE_WORD[e.state]}</span>` : ''}
     </div>
-    <h4>${esc(e.title)}</h4>
+    <div class="pl-card-top">${artHTML(e, 'md')}<h4>${esc(e.title)}</h4></div>
     ${e.sub || e.why ? `<p>${ic('link', 12)} ${esc(e.sub || e.why)}</p>` : ''}
     <footer>
       <span class="pl-card-when">${ic('calendar', 12)} ${fmtDayLabel(new Date(e.start))}${e.point ? '' : ` · ${plDur(e.end - e.start)}`}</span>
@@ -1045,7 +1119,7 @@ function planKeys(e) {
     if (e.key === 'Escape') e.target.blur();
     return;
   }
-  const map = { m: 'month', w: 'week', d: 'day', a: 'agenda', p: 'planner' };
+  const map = { m: 'month', w: 'week', d: 'day', l: 'list', a: 'agenda', p: 'planner' };
   if (map[e.key]) { setView(map[e.key]); return; }
   if (e.key === 't') return planToday();
   if (e.key === 'ArrowLeft' || e.key === '[') return planGo(-1);
